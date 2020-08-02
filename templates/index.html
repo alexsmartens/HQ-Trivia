@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>HQ-Trivia II Game</title>
+
+    <link rel="stylesheet" href="static/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.14.0/css/all.min.css">
+    <!-- Custom styles -->
+    <style>
+        .btn.btn-primary[disabled] {
+            background-color: #cccccc;
+            border: none;
+            color: black;
+        }
+      }
+    </style>
+
+</head>
+<body>
+    <div class="container-sm">
+        <!-- Top -->
+        <div class="text-center shadow-sm p-3 mb-4 bg-white rounded">
+            <h4>HQ-Trivia II Game</h4>
+        </div>
+
+
+        <!-- Body -->
+        <div class="row d-flex align-items-start">
+            <!-- Col 1 -->
+            <div class="col-sm-3 > shadow-sm p-3 mb-5 bg-white rounded">
+                <!-- (1) Username -->
+                <form id="noname_form">
+                    <label>Username</label>
+                    <div class="input-group mb-3">
+                        <input id="noname_input-username" type="text" class="username form-control" aria-label="Username">
+                        <div class="input-group-append">
+                            <button id="noname_btn-log-in" class="btn btn-primary" type="submit">
+                                Log in
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Col 2 -->
+            <div class="col-sm-1"></div>
+
+            <!-- Col 3-->
+            <div class="col-sm-8 shadow p-3 mb-5 bg-white rounded" style="min-height:265px !important">
+                <div id="chat">
+                    <div class="msg-wrapper"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!--  Bootstrap prerequisites -->
+    <script src="static/js/jquery.min.js"></script>
+    <script src="static/js/bootstrap.min.js"></script>
+
+    <script src="static/js/socket.io.js"></script>
+
+    <script id="chat_client" src="static/js/game_client.js" rooms="{{rooms}}"></script>
+
+</body>
+</html>
