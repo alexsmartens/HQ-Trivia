@@ -23,7 +23,7 @@ redis_client = redis.from_url(REDIS_URL, decode_responses=True)
 
 # Configure the game server
 SERVER_INSTANCE_NAME = "SERVER" + get_new_code()
-MIN_PLAYERS = 2  # Minimum number of players to start a game
+MIN_PLAYERS = 3  # Minimum number of players to start a game
 
 # Clean up on first Heroku Dyno instance launched
 redis_client.delete(NEXT_GAME_ROOM)
@@ -46,6 +46,15 @@ def load_web_page():
     return render_template("index.html")
 
 
+@socketio.on("disconnect")
+def disconnect():
+    """
+    Removes user registration, if the user with the specified SID (request.sid) has been registered in a game.
+    """
+    if request.sid in user_registry:
+        del user_registry[request.sid]
+
+
 @socketio.on("register_client")
 def register_client(data):
     """
@@ -63,7 +72,7 @@ def register_client(data):
     """
 
     if "username" in data and isinstance(data["username"], str) and len(data["username"]):
-        username, room_name, msg = game_factory.register_client(data["username"])
+        username, room_name, msg = game_factory.register_player(data["username"])
         if room_name:
             # Assign the user to the selected room
             # Note: join_room can only be called from a SocketIO event handler as it obtains some information from the

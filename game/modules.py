@@ -28,7 +28,7 @@ get_new_code = GetNewCode()
 
 class RedisSubscriptionService:
     """
-    A thread-like  object, that subscribes to all messages in redis and informs clients in the specified rooms and
+    A thread-like object, that subscribes to all messages in redis and informs clients in the specified rooms and
     maintains its subscription in the background (when started).
     """
 
@@ -112,8 +112,11 @@ class UserRegistry(dict):
             "room_name": user_info["room_name"],
             "type": "players_update",
             "action": action_str,
-            "username": user_info['username'],
+            "username": user_info["username"],
         }))
+        # Update the room records
+        if action_str == "left":
+            self.redis_client.srem(user_info["room_name"], user_info["username"])
 
 
 class GameFactory:
@@ -125,7 +128,6 @@ class GameFactory:
         self.redis_client = redis_client
         self.min_players = min_players
         self.logger = logger
-        self.room_name = self._get_room_registration()
 
     def register_player(self, username):
         """"
