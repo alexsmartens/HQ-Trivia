@@ -9,12 +9,21 @@ NEXT_GAME_ROOM = "next_game_room"  # this key's redis value defines the room_nam
 NEXT_GAME_SERVER = "next_game_server"  # this key's redis value defines the server instance that will run the next game (if any)
 
 
-def get_random_code():
+class GetNewCode:
     """
-    Generates a random code in format "xxxx-xxxx", where 'x' is a lowercase ascii character.
+    Generates a code in format "iiii-xxxx-xxxx", where 'iiii' is a server count and each 'x' is a lowercase ascii
+    character.
     """
-    letters = string.ascii_lowercase
-    return ''.join(random.choice(letters) if i != 4 else '-' for i in range(9))
+    cnt = 0
+
+    @classmethod
+    def __call__(cls):
+        cls.cnt = cls.cnt + 1 if cls.cnt < 9999 else 0
+        letters = string.ascii_lowercase
+        return f"{cls.cnt:04}-" + ''.join(random.choice(letters) if i != 4 else '-' for i in range(9))
+
+
+get_new_code = GetNewCode()
 
 
 class RedisSubscriptionService:
@@ -168,5 +177,5 @@ class GameFactory:
         if self.redis_client.exists(NEXT_GAME_ROOM):
             pass
         else:
-            self.redis_client[NEXT_GAME_ROOM] = "room-" + get_random_code()
+            self.redis_client[NEXT_GAME_ROOM] = "room-" + get_new_code()
         return self.redis_client[NEXT_GAME_ROOM]
