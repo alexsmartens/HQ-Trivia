@@ -33,5 +33,28 @@ redis_subscription = RedisSubscriptionService(redis_client, REDIS_CHANNEL_NAME, 
 redis_subscription.start()
 
 
+@app.route("/")
+def load_web_page():
+    """
+    Returns the main html page.
+    """
+    return render_template("index.html")
+
+
+@socketio.on("register_client")
+def register_client(data):
+    """
+    Register the client.
+
+    """
+
+    if "username" in data and isinstance(data["username"], str) and len(data["username"]):
+        return data["username"], "sample-room", ""
+    else:
+        app.logger.warning(f"Incorrect data format was received form the client {request.sid}: {data}. A correct "
+                           f"message should have 'username' key and its value should be a non-empty string.")
+        return "", False, '{"msg": "No user name provided, please try again", "type": "warning"}'
+
+
 if __name__ == "__main__":
     socketio.run(app, debug=True)
