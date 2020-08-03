@@ -4,6 +4,11 @@ import json
 import eventlet
 
 
+# Redis key names shared between server instances
+NEXT_GAME_ROOM = "next_game_room"  # this key's redis value defines the room_name where the next game will be played
+NEXT_GAME_SERVER = "next_game_server"  # this key's redis value defines the server instance that will run the next game (if any)
+
+
 def get_random_code():
     """
     Generates a random code in format "xxxx-xxxx", where 'x' is a lowercase ascii character.
@@ -100,3 +105,68 @@ class UserRegistry(dict):
             "action": action_str,
             "username": user_info['username'],
         }))
+
+
+class GameFactory:
+    """
+    Tracks new client connections and create games when enough clients connected.
+    """
+    def __init__(self, server_name, redis_client, min_players, logger):
+        self.server_name = server_name
+        self.redis_client = redis_client
+        self.min_players = min_players
+        self.logger = logger
+        self.room_name = self._get_room_registration()
+
+    def register_player(self, username):
+        """"
+        Registers a player to the game (next_room_in) in redis. This function launches a new game if the minimum number
+        of players is reached.
+
+        Arguments:
+            username - (str) desired username.
+
+        Returns:
+            username - (str) the same as the username input argument.
+            room_name - (str or bool) the next room in play if there is no conflict with the username, otherwise
+                False.
+            msg - (json_str) empty if there is no conflict with the username, otherwise a json_str with two attributes
+                where (1) "msg" is a message asking to pick a different name and (2) "type" is "info"
+        """
+        # next_room_in is checked every time because it might be updated by a different server instance. It happens if
+        # a different server has started the previous game, then the player is to be enrolled to the most recent
+        # game room
+        next_room = self._get_next_game_room()
+
+        if self.redis_client.sismember(next_room, username):
+            # Client with this name is already registered
+            return username, False, '{' \
+                                    '"msg": "This username already exists, please pick a different one", ' \
+                                    '"type": "info"' \
+                                    '}'
+        else:
+            if self.min_players - self.redis_client.scard(next_room) <= 1:
+                # Spawn a new game
+                if self.redis_client.exists(NEXT_GAME_SERVER):
+                    pass
+                else:
+                    # Register this server instance to run the next game
+                    self.redis_client[NEXT_GAME_SERVER] = self.server_name
+                    # *********** spawn the next game here
+                    raise NotImplemented
+            self.redis_client.sadd(next_room, username)
+            return username, next_room, ""
+
+    def _get_next_game_room(self):
+        """"
+        Gets the room name that will be in play next from redis. Creates a new room name if there is no info about the
+        next room in play.
+
+        Returns:
+            room_name - the room that will be in play next.
+        """
+        if self.redis_client.exists(NEXT_GAME_ROOM):
+            pass
+        else:
+            self.redis_client[NEXT_GAME_ROOM] = "room-" + get_random_code()
+        return self.redis_client[NEXT_GAME_ROOM]
