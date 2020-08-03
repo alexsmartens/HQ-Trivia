@@ -2,10 +2,11 @@ import os
 import logging
 import eventlet
 import redis
+import game.config_variables as conf
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, join_room
 
-from game.modules import NEXT_GAME_ROOM, NEXT_GAME_SERVER, get_new_code, RedisSubscriptionService, UserRegistry, GameFactory
+from game.modules import get_new_code, RedisSubscriptionService, UserRegistry, GameFactory
 
 
 # Initialize the app
@@ -17,24 +18,24 @@ gunicorn_logger = logging.getLogger("gunicorn.error")
 app.logger.handlers = gunicorn_logger.handlers
 app.logger.setLevel(gunicorn_logger.level)
 # Configure redis
-REDIS_CHANNEL_NAME = "hq_trivia"
-REDIS_URL = os.environ.get("REDIS_URL")
-redis_client = redis.from_url(REDIS_URL, decode_responses=True)
+redis_client = redis.from_url(conf.REDIS_URL, decode_responses=True)
 
 # Configure the game server
 SERVER_INSTANCE_NAME = "SERVER" + get_new_code()
 MIN_PLAYERS = 3  # Minimum number of players to start a game
 
 # Clean up on first Heroku Dyno instance launched
-redis_client.delete(NEXT_GAME_ROOM)
-redis_client.delete(NEXT_GAME_SERVER)
+redis_client.delete(conf.NORMAL_QUESTIONS)
+redis_client.delete(conf.NEXT_GAME_SERVER)
+redis_client.delete(conf.NEXT_GAME_ROOM)
+redis_client.delete(conf.NEXT_GAME_SERVER)
 
 # Create instances
-user_registry = UserRegistry(redis_client, REDIS_CHANNEL_NAME,  app.logger)
+user_registry = UserRegistry(redis_client, conf.REDIS_CHANNEL_NAME,  app.logger)
 game_factory = GameFactory(SERVER_INSTANCE_NAME, redis_client, MIN_PLAYERS, app.logger)
 
 # Run in the background
-redis_subscription = RedisSubscriptionService(redis_client, REDIS_CHANNEL_NAME, socketio, app.logger)
+redis_subscription = RedisSubscriptionService(redis_client, conf.REDIS_CHANNEL_NAME, socketio, app.logger)
 redis_subscription.start()
 
 

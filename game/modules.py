@@ -2,12 +2,7 @@ import random
 import string
 import json
 import eventlet
-
-
-# Redis key names shared between server instances
-NEXT_GAME_ROOM = "next_game_room"  # this key's redis value defines the room_name where the next game will be played
-NEXT_GAME_SERVER = "next_game_server"  # this key's redis value defines the server instance that will run the next game (if any)
-
+import game.config_variables as conf
 
 class GetNewCode:
     """
@@ -121,7 +116,7 @@ class UserRegistry(dict):
 
 class GameFactory:
     """
-    Tracks new client connections and create games when enough clients connected.
+    Registers new client connections and creates games when enough clients connected.
     """
     def __init__(self, server_name, redis_client, min_players, logger):
         self.server_name = server_name
@@ -158,13 +153,13 @@ class GameFactory:
         else:
             if self.min_players - self.redis_client.scard(next_room) <= 1:
                 # Spawn a new game
-                if self.redis_client.exists(NEXT_GAME_SERVER):
+                if self.redis_client.exists(conf.NEXT_GAME_SERVER):
                     pass
                 else:
                     # Register this server instance to run the next game
-                    self.redis_client[NEXT_GAME_SERVER] = self.server_name
-                    # *********** spawn the next game here
-                    raise NotImplemented
+                    self.redis_client[conf.NEXT_GAME_SERVER] = self.server_name
+                    # Create a new game
+                    eventlet.spawn(self.create_new_game, next_room)
             self.redis_client.sadd(next_room, username)
             return username, next_room, ""
 
@@ -176,8 +171,12 @@ class GameFactory:
         Returns:
             room_name - the room that will be in play next.
         """
-        if self.redis_client.exists(NEXT_GAME_ROOM):
+        if self.redis_client.exists(conf.NEXT_GAME_ROOM):
             pass
         else:
-            self.redis_client[NEXT_GAME_ROOM] = "room-" + get_new_code()
-        return self.redis_client[NEXT_GAME_ROOM]
+            self.redis_client[conf.NEXT_GAME_ROOM] = "room-" + get_new_code()
+        return self.redis_client[conf.NEXT_GAME_ROOM]
+
+    def create_new_game(self, room_name):
+        # *********** spawn the next game here
+        raise NotImplemented
