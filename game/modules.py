@@ -71,3 +71,32 @@ class RedisSubscriptionService:
         Maintains Redis subscription in the background.
         """
         eventlet.spawn(self.run)
+
+
+class UserRegistry(dict):
+    """
+    A dictionary-like data structure that registers clients by session id (SID) and publishes the updates via the
+    specified redis_pubsub client.
+    """
+    def __init__(self, redis_client, channel_name, logger):
+        super().__init__()
+        self.redis_client = redis_client
+        self.channel_name = channel_name
+        self.logger = logger
+
+    def __setitem__(self, session_id, user_info):
+        eventlet.spawn(self._publish, "joined", user_info)
+        super().__setitem__(session_id, user_info)
+
+    def __delitem__(self, session_id):
+        eventlet.spawn(self._publish, "left", self.get(session_id).copy())
+        super().__delitem__(session_id)
+
+    def _publish(self, action_str, user_info):
+        # Broadcast that the new user has joined/left the group
+        self.redis_client.publish(self.channel_name, json.dumps({
+            "room_name": user_info["room_name"],
+            "type": "players_update",
+            "action": action_str,
+            "username": user_info['username'],
+        }))

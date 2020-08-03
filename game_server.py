@@ -5,7 +5,7 @@ import redis
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, join_room
 
-from game.modules import get_random_code, RedisSubscriptionService
+from game.modules import get_random_code, RedisSubscriptionService, UserRegistry
 
 
 # Initialize the app
@@ -25,6 +25,8 @@ redis_client = redis.from_url(REDIS_URL, decode_responses=True)
 SERVER_INSTANCE_NAME = "SERVER" + get_random_code()
 MIN_PLAYERS = 2  # Minimum number of players to start a game
 
+# Create instances
+user_registry = UserRegistry(redis_client, REDIS_CHANNEL_NAME,  app.logger)
 
 # Run in the background
 redis_subscription = RedisSubscriptionService(redis_client, REDIS_CHANNEL_NAME, socketio, app.logger)
