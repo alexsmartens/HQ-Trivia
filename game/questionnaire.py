@@ -9,12 +9,17 @@ import game.config_variables as conf
 def load_questions2redis(redis_client, file_path=None, file_ext=None, category_dict=None):
     """
     Loads questions from a file to the specified redis hash maps, where each question category corresponds to a separate
-    hash map. In a hash map, a hash is a question count number and a value is a JSON string in a specified format.
+    hash map. In a hash map, a hash is a question count number (from 0 to N) and a value is a JSON string in a
+    specified format.
 
     Notes:
-        This function is only expected to work with the default values at the moment because of the following reasons:
-        (1) only supports JSON files at the moment.
-        (2) does not check the question format, it expects that the question format is the same as the one in "questions_1.json".
+        (1) Each question JSON str should have the following keys
+            - 'category',
+            - 'question',
+            - 'answer',
+            - 'alternateSpellings',
+            - 'suggestions'.
+        (2) Only supports JSON files at the moment.
 
     Arguments:
         redis_client - (obj) redis client, to where the data is to be loaded.
@@ -43,5 +48,12 @@ def load_questions2redis(redis_client, file_path=None, file_ext=None, category_d
 
     for q_key, redis_key in category_dict.items():
         for idx, question in enumerate(questions[q_key]):
+            assert ("category" in question) and \
+                   ("question" in question) and \
+                   ("answer" in question) and \
+                   ("alternateSpellings" in question) and \
+                   ("suggestions" in question), \
+                "One or more keys are missing the selected JSON string question, the expected keys are 'category', " \
+                "'question', 'answer', 'alternateSpellings', 'suggestions'"
             redis_client.hset(redis_key, idx, json.dumps(question))
     del questions
