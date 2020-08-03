@@ -5,7 +5,7 @@ import redis
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, join_room
 
-from game.modules import NEXT_ROOM_IN, NEXT_SERVER_IN, get_random_code, RedisSubscriptionService, UserRegistry, GameFactory
+from game.modules import NEXT_GAME_ROOM, NEXT_GAME_SERVER, get_new_code, RedisSubscriptionService, UserRegistry, GameFactory
 
 
 # Initialize the app
@@ -22,12 +22,12 @@ REDIS_URL = os.environ.get("REDIS_URL")
 redis_client = redis.from_url(REDIS_URL, decode_responses=True)
 
 # Configure the game server
-SERVER_INSTANCE_NAME = "SERVER" + get_random_code()
+SERVER_INSTANCE_NAME = "SERVER" + get_new_code()
 MIN_PLAYERS = 2  # Minimum number of players to start a game
 
 # Clean up on first Heroku Dyno instance launched
-redis_client.delete(NEXT_ROOM_IN)
-redis_client.delete(NEXT_SERVER_IN)
+redis_client.delete(NEXT_GAME_ROOM)
+redis_client.delete(NEXT_GAME_SERVER)
 
 # Create instances
 user_registry = UserRegistry(redis_client, REDIS_CHANNEL_NAME,  app.logger)
