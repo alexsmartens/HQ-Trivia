@@ -2,10 +2,11 @@ import os
 import logging
 import eventlet
 import redis
-import game.config_variables as conf
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, join_room
 
+import game.config_variables as conf
+from game.questionnaire import load_questions2redis
 from game.modules import get_new_code, RedisSubscriptionService, UserRegistry, GameFactory
 
 
@@ -29,6 +30,8 @@ redis_client.delete(conf.NORMAL_QUESTIONS)
 redis_client.delete(conf.NEXT_GAME_SERVER)
 redis_client.delete(conf.NEXT_GAME_ROOM)
 redis_client.delete(conf.NEXT_GAME_SERVER)
+# Set up questionnaire
+load_questions2redis(redis_client)
 
 # Create instances
 user_registry = UserRegistry(redis_client, conf.REDIS_CHANNEL_NAME,  app.logger)
