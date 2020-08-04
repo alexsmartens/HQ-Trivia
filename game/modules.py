@@ -23,28 +23,6 @@ class GetNewCode:
 get_new_code = GetNewCode()
 
 
-def get_random_set(set_len, start, end):
-    """
-    Gets a set of random numbers in the range of [start, end).
-
-    Arguments:
-        start - (int) starting number.
-        end - (int) end number.
-        set_len - (int) length of the set to be generated.
-
-    Returns:
-        numbers - (set) set of random numbers.
-    """
-    numbers = set()
-    while len(numbers) < set_len:
-        rnd = random.randint(start, end-1)
-        if rnd in numbers:
-            pass
-        else:
-            numbers.add(rnd)
-    return numbers
-
-
 class RedisSubscriptionService:
     """
     A thread-like object, that subscribes to all messages in redis and informs clients in the specified rooms and

@@ -5,7 +5,28 @@ import random
 from collections import deque
 
 import game.config_variables as conf
-from game.modules import get_random_set
+
+
+def get_random_set(set_len, start, end):
+    """
+    Gets a set of random numbers in the range of [start, end).
+
+    Arguments:
+        start - (int) starting number.
+        end - (int) end number.
+        set_len - (int) length of the set to be generated.
+
+    Returns:
+        numbers - (set) set of random numbers.
+    """
+    numbers = set()
+    while len(numbers) < set_len:
+        rnd = random.randint(start, end-1)
+        if rnd in numbers:
+            pass
+        else:
+            numbers.add(rnd)
+    return numbers
 
 
 def load_questions2redis(redis_client, file_path=None, file_ext=None, category_dict=None):
@@ -97,7 +118,7 @@ def get_random_questions(redis_client, difficulty_level, q_len):
          q_len - (int) number of questions to be returned.
 
      Returns:
-         indices - (set) set of the question indices (for assuring that the game does not run the same question twice,
+         indices - (set) set of the question indices (for assuring that the game does not run the same question twice
             if additional questions are polled during the game).
          question_q - (deque) queue of question. Each question is stored in a dictionary format, with the following
             keys: "question", "options", "answer".
