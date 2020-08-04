@@ -96,6 +96,14 @@ def map_question_str2dict(question_str):
             3 "options" including the correct option.
      """
     question_raw = json.loads(question_str)
+    assert ("category" in question_raw) and \
+           ("question" in question_raw) and \
+           ("answer" in question_raw) and \
+           ("alternateSpellings" in question_raw) and \
+           ("suggestions" in question_raw), \
+        f"One or more keys are missing the selected JSON string question, the expected keys are 'category', " \
+        f"'question', 'answer', 'alternateSpellings', 'suggestions'. The encountered question: {question_raw}"
+
     question = {}
     question["question"] = question_raw["question"]
     question["answer"] = question_raw["answer"] if len(question_raw["alternateSpellings"]) == 0 or random.randint(0, 1) == 0\

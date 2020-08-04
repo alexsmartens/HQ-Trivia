@@ -52,7 +52,7 @@ class RedisSubscriptionService:
         self.socketio = socketio
         self.logger = logger
 
-    def __iter_data(self):
+    def _iter_data(self):
         """
         Returns redis posts of data type "message" when they are published.
 
@@ -71,6 +71,7 @@ class RedisSubscriptionService:
         Arguments:
             msg_str - (str) a JSON with the message content. This string should be a JSON string and contain at least
                 two keys "room_name" (intended destination), and "type" (message type)
+
         Returns:
             None
         """
@@ -92,7 +93,7 @@ class RedisSubscriptionService:
         """
         Listens for new messages and sends them to the specified rooms
         """
-        for msg_str in self.__iter_data():
+        for msg_str in self._iter_data():
             eventlet.spawn(self.send, msg_str)
 
     def start(self):
@@ -119,6 +120,12 @@ class UserRegistry(dict):
         return cls._singleton
 
     def __init__(self, redis_client, channel_name, logger):
+        """
+        Arguments:
+             server_name - (str) name of the server instance that runs this code.
+             redis_client - (obj) redis client for publishing updates about the players joining or leaving rooms.
+             logger - (obj) app logger.
+        """
         super().__init__()
         self.redis_client = redis_client
         self.channel_name = channel_name
@@ -133,6 +140,16 @@ class UserRegistry(dict):
         super().__delitem__(session_id)
 
     def _publish(self, action_str, user_info):
+        """
+        Publishes updates about the players joining or leaving rooms on the specified redis channel.
+
+        Arguments:
+           action_str - (str) description of player action 'left' or 'joined';
+           user_info - (dict) includes "room_name" and "username" keys with str values
+
+        Returns:
+           None
+        """
         # Broadcast that the new user has joined/left the group
         self.redis_client.publish(self.channel_name, json.dumps({
             "room_name": user_info["room_name"],
@@ -161,6 +178,13 @@ class GameFactory:
         return cls._singleton
 
     def __init__(self, server_name, redis_client, min_players, logger):
+        """
+        Arguments:
+             server_name - (str) name of the server instance that runs this code.
+             redis_client - (obj) redis client for registering players and rooms.
+             min_players - (int) minimum number of players for the game to start.
+             logger - (obj) app logger.
+        """
         self.server_name = server_name
         self.redis_client = redis_client
         self.min_players = min_players
