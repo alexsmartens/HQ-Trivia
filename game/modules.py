@@ -2,7 +2,9 @@ import random
 import string
 import json
 import eventlet
+
 import game.config_variables as conf
+
 
 class GetNewCode:
     """
@@ -21,6 +23,28 @@ class GetNewCode:
 get_new_code = GetNewCode()
 
 
+def get_random_set(set_len, start, end):
+    """
+    Gets a set of random numbers in the range of [start, end).
+
+    Arguments:
+        start - (int) starting number.
+        end - (int) end number.
+        set_len - (int) length of the set to be generated.
+
+    Returns:
+        numbers - (set) set of random numbers.
+    """
+    numbers = set()
+    while len(numbers) < set_len:
+        rnd = random.randint(start, end-1)
+        if rnd in numbers:
+            pass
+        else:
+            numbers.add(rnd)
+    return numbers
+
+
 class RedisSubscriptionService:
     """
     A thread-like object, that subscribes to all messages in redis and informs clients in the specified rooms and
@@ -28,6 +52,15 @@ class RedisSubscriptionService:
     """
 
     def __init__(self, redis_client, channel_name, socketio, logger):
+        """
+        Initializes a redis subscription instance.
+        
+        Arguments:
+             redis_client - (obj) redis client where the pubssub is to be subscribed to.
+             channel_name - (str) redis channel where the pubssub is to be subscribed to.
+             socketio - (obj) socketio app, required for sending messages to rooms.
+             logger - (obj) app logger.
+        """
         self.pubsub = redis_client.pubsub()
         self.pubsub.subscribe(channel_name)
         self.socketio = socketio
@@ -52,7 +85,8 @@ class RedisSubscriptionService:
         Arguments:
             msg_str - (str) a JSON with the message content. This string should be a JSON string and contain at least
                 two keys "room_name" (intended destination), and "type" (message type)
-
+        Returns:
+            None
         """
         try:
             msg = json.loads(msg_str)
