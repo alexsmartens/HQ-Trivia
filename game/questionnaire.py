@@ -122,7 +122,7 @@ def get_random_questions(redis_client, redis_key, q_len):
      Gets a list of random questions of the specified difficulty from redis.
 
      Note:
-         This function treats redis questions as they all are in the same JSON string format as the ones in "questions_1.json".
+         Assumes that question hashes are the question indices (this is how load_questions2redis loads questions to redis).
 
      Arguments:
          redis_client - (obj) redis client, where the questions are to be read.
@@ -143,3 +143,85 @@ def get_random_questions(redis_client, redis_key, q_len):
     for i, q_hash in enumerate(q_hashes):
         q_queue.append(map_question_str2dict(json_questions[i], q_hash))
     return q_hashes, q_queue
+
+
+class QuestionManager:
+    """
+    A queue-like object, that gets questions from redis and provides an easy access to them through "pop" method. It
+    also controls the number of questions in the queue and gets more questions if needed.
+    """
+
+    def __init__(self, redis_client, logger, min_questions=5, question_config=None, update_lim=10):
+        """
+        Arguments:
+             redis_client - (obj) redis client where get the questions.
+                          logger - (obj) app logger.
+             min_questions - (int) minimum number of questions that should be in the queue at all times.
+             question_config - (dict) a dictionary in which the keys are the keys of redis hash maps where the questions
+                are to be drawn from and and the values are the numbers of questions to be drawn from each hash map,
+                e.g., {"normal": 10, "final": 5}, {"nature": 2, "history": 3} .
+            update_lim - (int) maximum allowed number of updates (this limit is supposed to cover a case when a user has
+                seen all the questions from the database; alternatively but unlikely, it might harm (1) if the user is a
+                genius and knows all the answers or (2) bad luck with getting random questions)
+        """
+        self.redis_client = redis_client
+        self.logger = logger
+        self.min_questions = min_questions
+        self.question_config = {
+            conf.NORMAL_QUESTIONS: 10,
+            conf.NORMAL_QUESTIONS: 5,
+        } if question_config is None else question_config
+        # Keeping track of the game questions
+        self.questions_q = deque()
+        self.question_idx_ctrl = {key: set() for key in self.question_config}
+        # Control number of updates
+        self._update_lim = update_lim
+        self.update_count = 0
+        # Prepare questions in the background
+        eventlet.spawn(self._prepare_game_questions)
+
+    def __len__(self):
+        """
+        Propagates the actual question queue length as the object length
+        """
+        return len(self.questions_q)
+
+    def _prepare_game_questions(self):
+        """"
+         Adds more questions to question queue (self.questions_q) and keeps track of the added questions
+         in self.question_idx_ctrl.
+
+         Note:
+             The function only does what it is supposed to do if no run count limit (self._update_lim) is reached.
+         """
+        if self.update_count < self._update_lim:
+            for redis_hash, q_len in self.question_config.items():
+                q_hashes, q_queue = get_random_questions(self.redis_client, redis_hash, q_len)
+                if len(self.question_idx_ctrl[redis_hash]) == 0:
+                    self.question_idx_ctrl[redis_hash] = q_hashes
+                    while q_queue:
+                        self.questions_q.append(q_queue.pop())
+                else:
+                    while q_queue:
+                        question = q_queue.pop()
+                        if question["hash"] in self.question_idx_ctrl[redis_hash]:
+                            pass
+                        else:
+                            self.question_idx_ctrl[redis_hash].add(question["hash"])
+                            self.questions_q.append(question)
+            self.update_count += 1
+        else:
+            self.logger.error(f"Exceeded maximum number of question updates in a game (limit = {self._update_lim})")
+
+    def pop(self):
+        """
+        Pops an item from the question queue. It also launches a question update if the number of questions in a queue
+        is lower than the limit (self.min_questions).
+
+        Returns:
+             question - (dict) first question in the queue (self.questions_q), this question has the following keys:
+                "question", "options", "answer", "hash_idx" (as per map_question_str2dict specification).
+        """
+        if len(self.questions_q) -1 < self.min_questions:
+            eventlet.spawn(self._prepare_game_questions)
+        return self.questions_q.pop()

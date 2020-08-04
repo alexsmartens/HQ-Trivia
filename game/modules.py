@@ -1,3 +1,4 @@
+import time
 import random
 import string
 import json
@@ -5,7 +6,7 @@ from collections import deque
 import eventlet
 
 import game.config_variables as conf
-from game.questionnaire import get_random_questions
+from game.questionnaire import QuestionManager
 
 
 class GetNewCode:
@@ -179,30 +180,20 @@ class GameFactory:
             cls._singleton = super(GameFactory, cls).__new__(cls)
         return cls._singleton
 
-    def __init__(self, server_name, redis_client, min_players, logger):
+    def __init__(self, server_name, redis_client, min_players, channel_name, logger):
         """
         Arguments:
              server_name - (str) name of the server instance that runs this code.
              redis_client - (obj) redis client for registering players and rooms.
              min_players - (int) minimum number of players for the game to start.
+             channel_name - (str) redis channel where game instances publish questions to.
              logger - (obj) app logger.
         """
         self.server_name = server_name
         self.redis_client = redis_client
         self.min_players = min_players
+        self.channel_name = channel_name
         self.logger = logger
-        self.next_game_questions = {
-            "normal": {
-                "indices": set(),
-                "queue": deque(),
-            },
-            "final": {
-                "indices": set(),
-                "queue": deque(),
-            },
-        }
-        # Prepare game questions in the background
-        eventlet.spawn(self.prepare_game_questions)
 
     def register_player(self, username):
         """"
@@ -257,62 +248,18 @@ class GameFactory:
             self.redis_client[conf.NEXT_GAME_ROOM] = "room-" + get_new_code()
         return self.redis_client[conf.NEXT_GAME_ROOM]
 
-    def prepare_game_questions(self, n_normal=10, n_final=5):
-        """"
-         Prepares requested amount of questions for the next game.
-
-         Description:
-            This function is supposed to be run asynchronously, that's why instead of returning it rewrites
-            self.next_game_questions. This is a dictionary of questions split by the level of difficulty:
-            "normal" and "final", where a value of each of these keys are a dictionary with the following keys:
-                 indices - (set) set of the question indices (for assuring that the game does not run the same question
-                    twice if additional questions are polled during the game).
-                 queue - (deque) queue of question. Each question is stored in a dictionary format, with the following
-                    keys: "question", "options", "answer".
-
-         Arguments:
-             n_normal - (int) number of questions with normal difficulty level.
-             n_final - (int) number of questions with final difficulty level.
-
-         Returns:
-            None
-         """
-        normal_indices, normal_queue = get_random_questions(self.redis_client, conf.NORMAL_QUESTIONS, n_normal)
-        final_indices, final_queue = get_random_questions(self.redis_client, conf.NORMAL_QUESTIONS, n_normal)
-        self.next_game_questions = {
-            "normal": {
-                "indices": normal_indices,
-                "queue": normal_queue,
-            },
-            "final": {
-                "indices": final_indices,
-                "queue": final_queue,
-            },
-        }
-
     def create_new_game(self, room_name):
-        new_game = Game(room_name, self.next_game_questions, self.redis_client)
-        print(f">>>> room_name: {room_name}")
-        print(self.next_game_questions)
-        # spawn new game
-        raise NotImplemented
-        self.next_game_questions = {
-            "normal": {
-                "indices": set(),
-                "queue": deque(),
-            },
-            "final": {
-                "indices": set(),
-                "queue": deque(),
-            },
-        }
-        self.prepare_game_questions()
+        new_game = Game(room_name, self.redis_client, self.channel_name, self.logger)
+        new_game.start()
 
 
 class Game:
-    def __init__(self, room_name, game_questions, redis_client):
-        self.room = room_name
+    def __init__(self, room_name, redis_client, channel_name, logger):
+        self.room_name = room_name
         self.redis_client = redis_client
+        self.channel_name = channel_name
+        self.logger = logger
+        # Game info
         self.round_cnt = 0
 
     def run_new_round(self):
@@ -321,5 +268,3 @@ class Game:
 
     def get_question(self):
         pass
-
-
