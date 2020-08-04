@@ -26,13 +26,21 @@ get_new_code = GetNewCode()
 class RedisSubscriptionService:
     """
     A thread-like object, that subscribes to all messages in redis and informs clients in the specified rooms and
-    maintains its subscription in the background (when started).
+    maintains its subscription in the background (when started). *This is a singleton.
     """
+    _singleton = None
+
+    def __new__(cls, *args, **kwargs):
+        """
+        Assures that class follows the singleton patter.
+        """
+        assert cls._singleton is None, "This class instance reinitialization is not expected"
+        if not cls._singleton:
+            cls._singleton = super(RedisSubscriptionService, cls).__new__(cls)
+        return cls._singleton
 
     def __init__(self, redis_client, channel_name, socketio, logger):
         """
-        Initializes a redis subscription instance.
-        
         Arguments:
              redis_client - (obj) redis client where the pubssub is to be subscribed to.
              channel_name - (str) redis channel where the pubssub is to be subscribed to.
@@ -97,8 +105,19 @@ class RedisSubscriptionService:
 class UserRegistry(dict):
     """
     A dictionary-like data structure that registers clients by session id (SID) and publishes the updates via the
-    specified redis_pubsub client.
+    specified redis_pubsub client. *This is a singleton.
     """
+    _singleton = None
+
+    def __new__(cls, *args, **kwargs):
+        """
+        Assures that class follows the singleton patter.
+        """
+        assert cls._singleton is None, "This class instance reinitialization is not expected"
+        if not cls._singleton:
+            cls._singleton = super(UserRegistry, cls).__new__(cls)
+        return cls._singleton
+
     def __init__(self, redis_client, channel_name, logger):
         super().__init__()
         self.redis_client = redis_client
@@ -128,8 +147,19 @@ class UserRegistry(dict):
 
 class GameFactory:
     """
-    Registers new client connections and creates games when enough clients connected.
+    Registers new client connections and creates games when enough clients connected (this is a singleton).
     """
+    _singleton = None
+
+    def __new__(cls, *args, **kwargs):
+        """
+        Assures that class follows the singleton patter.
+        """
+        assert cls._singleton is None, "This class instance reinitialization is not expected"
+        if not cls._singleton:
+            cls._singleton = super(GameFactory, cls).__new__(cls)
+        return cls._singleton
+
     def __init__(self, server_name, redis_client, min_players, logger):
         self.server_name = server_name
         self.redis_client = redis_client
