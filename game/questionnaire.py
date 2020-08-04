@@ -84,14 +84,14 @@ def load_questions2redis(redis_client, file_path=None, file_ext=None, category_d
     del questions
 
 
-def map_question_str2dict(question_str, hash_idx):
+def map_question_str2dict(question_str, q_hash):
     """
     Maps a JSON string to a dictionary which is ready to be played.
 
      Arguments:
          question_str - (str) question in the JSON string format (includes the following keys:
             'category', 'question', 'answer', 'alternateSpellings', 'suggestions').
-         hash_idx - (int) the question index in the database.
+         q_hash - (str or int) the question hash in the corresponding hash map.
 
      Returns:
          question - (dict) a question dictionary ready to by played, which includes a "question", a correct "answer",
@@ -105,10 +105,10 @@ def map_question_str2dict(question_str, hash_idx):
            ("suggestions" in question_raw), \
         f"One or more keys are missing the selected JSON string question, the expected keys are 'category', " \
         f"'question', 'answer', 'alternateSpellings', 'suggestions'. The encountered question: {question_raw}"
-    assert isinstance(hash_idx, int), "Question database index should be integer"
+    assert isinstance(q_hash, int) or isinstance(q_hash, str), "Question hash should be integer or string"
 
     question = {}
-    question["hash_idx"] = hash_idx
+    question["hash"] = q_hash
     question["question"] = question_raw["question"]
     question["answer"] = question_raw["answer"] if len(question_raw["alternateSpellings"]) == 0 or random.randint(0, 1) == 0\
         else random.choice(question_raw["alternateSpellings"])
@@ -130,16 +130,16 @@ def get_random_questions(redis_client, redis_key, q_len):
          q_len - (int) number of questions to be returned.
 
      Returns:
-         hash_indices - (set) set of the question indices (for assuring that the game does not run the same question twice
+         q_hashes - (set) set of the question hashes (for assuring that the game does not run the same question twice
             if additional questions are polled during the game).
-         question_q - (deque) queue of question. Each question is stored in a dictionary format, with the following
+         q_queue - (deque) queue of question. Each question is stored in a dictionary format, with the following
             keys: "question", "options", "answer", "hash_idx"
 
      """
     num_questions = redis_client.hlen(redis_key)
-    hash_indices = get_random_set(q_len, 0, num_questions)
-    json_questions = redis_client.hmget(redis_key, *hash_indices)
-    question_q = deque()
-    for i, hash_idx in enumerate(hash_indices):
-        question_q.append(map_question_str2dict(json_questions[i], hash_idx))
-    return hash_indices, question_q
+    q_hashes = get_random_set(q_len, 0, num_questions)
+    json_questions = redis_client.hmget(redis_key, *q_hashes)
+    q_queue = deque()
+    for i, q_hash in enumerate(q_hashes):
+        q_queue.append(map_question_str2dict(json_questions[i], q_hash))
+    return q_hashes, q_queue
