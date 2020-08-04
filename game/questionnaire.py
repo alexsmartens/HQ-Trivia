@@ -83,17 +83,18 @@ def load_questions2redis(redis_client, file_path=None, file_ext=None, category_d
     del questions
 
 
-def map_question_str2dict(question_str):
+def map_question_str2dict(question_str, db_idx):
     """
     Maps a JSON string to a dictionary which is ready to be played.
 
      Arguments:
          question_str - (str) question in the JSON string format (includes the following keys:
             'category', 'question', 'answer', 'alternateSpellings', 'suggestions').
+         db_idx - (int) the question index in the database.
 
      Returns:
-         question - (dict) a question dictionary ready to by played, which includes a "question", a correct "answer" and
-            3 "options" including the correct option.
+         question - (dict) a question dictionary ready to by played, which includes a "question", a correct "answer",
+            3 "options" including the correct option and the question index in the database "db_idx".
      """
     question_raw = json.loads(question_str)
     assert ("category" in question_raw) and \
@@ -103,8 +104,10 @@ def map_question_str2dict(question_str):
            ("suggestions" in question_raw), \
         f"One or more keys are missing the selected JSON string question, the expected keys are 'category', " \
         f"'question', 'answer', 'alternateSpellings', 'suggestions'. The encountered question: {question_raw}"
+    assert isinstance(db_idx, int), "Question database index should be integer"
 
     question = {}
+    question["db_idx"] = db_idx
     question["question"] = question_raw["question"]
     question["answer"] = question_raw["answer"] if len(question_raw["alternateSpellings"]) == 0 or random.randint(0, 1) == 0\
         else random.choice(question_raw["alternateSpellings"])
@@ -126,16 +129,16 @@ def get_random_questions(redis_client, difficulty_level, q_len):
          q_len - (int) number of questions to be returned.
 
      Returns:
-         indices - (set) set of the question indices (for assuring that the game does not run the same question twice
+         db_indices - (set) set of the question indices (for assuring that the game does not run the same question twice
             if additional questions are polled during the game).
          question_q - (deque) queue of question. Each question is stored in a dictionary format, with the following
-            keys: "question", "options", "answer".
+            keys: "question", "options", "answer", "db_idx"
 
      """
     num_questions = redis_client.hlen(difficulty_level)
-    indices = get_random_set(q_len, 0, num_questions)
-    questions_json = redis_client.hmget(difficulty_level, *indices)
+    db_indices = get_random_set(q_len, 0, num_questions)
+    json_questions = redis_client.hmget(difficulty_level, *db_indices)
     question_q = deque()
-    for question_json in questions_json:
-        question_q.append(map_question_str2dict(question_json))
-    return indices, question_q
+    for i, db_idx in enumerate(db_indices):
+        question_q.append(map_question_str2dict(json_questions[i], db_idx))
+    return db_indices, question_q
