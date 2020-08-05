@@ -225,7 +225,7 @@ class QuestionManager:
         """
         if len(self.questions_q) - 1 < self.min_questions:
             eventlet.spawn(self._prepare_game_questions)
-        elif len(self.questions_q) == 0:
+        if len(self.questions_q) == 0:
             return {
                 "question": "",
                 "options": ["", "", ""],
