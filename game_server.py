@@ -105,12 +105,23 @@ def register_player_answer(data):
         data - (dict) with the following keys:
             "round_answer_key" - a redis hash map key, where the answer is to be registered;
             "username" - player's name, a key for registering the answer in the hash map;
-            "answer" - user's answer, a value for the corresponding key
+            "answer" - user's answer, a value for the corresponding key;
+            "room_name" - user's game room name.
 
     Returns:
         None
     """
-    redis_client.hset(data["round_answer_key"], data["username"], data["answer"])
+    if ("round_answer_key" in data) and \
+       ("username" in data) and \
+       ("answer" in data) and \
+       ("room_name" in data):
+
+        if redis_client.sismember(data["room_name"], data["username"]):
+            redis_client.hset(data["round_answer_key"], data["username"], data["answer"])
+        else:
+            app.logger.error(f"Unauthorized player attempted to submit an answer, info:{data}")
+    else:
+        app.logger.warning(f"Incorrect player's answer, info:{data}")
 
 
 if __name__ == "__main__":

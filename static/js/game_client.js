@@ -4,22 +4,23 @@ let username = "",
 
 // OnLoginClicked function
 $("#noname_form").on("submit", function (e) {
-    e.preventDefault()
-    username = $("input.username").val();
-    if (username.length > 0)
-        socket.emit("register_client", {username: username}, registerUsername);
+    e.preventDefault();
+    let requested_username = $("input.username").val();
+    if (requested_username.length > 0)
+        socket.emit("register_client", {username: requested_username}, registerUsername);
 });
 
 // Register username
-function registerUsername(username, roomName, otherPlayers, minPlayers, is_game_starting, msgJson){
-    if (roomName) {
+function registerUsername(confirmed_username, confirmed_roomName, otherPlayers, minPlayers, is_game_starting, msgJson){
+    if (confirmed_roomName) {
+        username = confirmed_username;
+        roomName = confirmed_roomName;
         $("[id^=noname]").prop("disabled", true);
         $(".label_players").css("color", "black");
         if (is_game_starting)
             announceGameStatus("starting", minPlayers)
         else
             announceGameStatus("waiting", minPlayers);
-
         addPlayers(otherPlayers);
         updatePlayer("add_me", username);
     } else {
@@ -250,6 +251,7 @@ function selectRoundOption(btnInfo) {
 
 function reportRoundAnswer(answer, round_answer_key) {
     socket.emit("report_round_answer", {
+        room_name: roomName,
         username: username,
         answer: answer,
         round_answer_key: round_answer_key,
