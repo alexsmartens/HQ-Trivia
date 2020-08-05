@@ -1,6 +1,7 @@
 let username = "",
     roomName = "",
-    socket = io.connect(window.location.href)
+    isInGame = false,
+    socket = io.connect(window.location.href);
 
 // OnLoginClicked function
 $("#noname_form").on("submit", function (e) {
@@ -15,6 +16,7 @@ function registerUsername(confirmed_username, confirmed_roomName, otherPlayers, 
     if (confirmed_roomName) {
         username = confirmed_username;
         roomName = confirmed_roomName;
+        isInGame = true;
         $("[id^=noname]").prop("disabled", true);
         $(".label_players").css("color", "black");
         if (is_game_starting)
@@ -97,6 +99,7 @@ function updatePlayer(command, player_name) {
             );
             break;
         case "remove":
+            if (player_name == username) isInGame = false;
             let player_label = $(`label#player_tag_${player_name}`)
             if (player_label.length > 0)
                 player_label.remove();
@@ -164,15 +167,21 @@ function runRound(roundInfo){
         `
         <div class="container">
             <button type="button" class="option-btn btn btn-light" id="option-button-0" name="${roundInfo["options"][0]}"
-                value="${roundInfo["round_answer_key"]}" onclick="selectRoundOption(this)">${roundInfo["options"][0]}</button>
+                value="${roundInfo["round_answer_key"]}" onclick="selectRoundOption(this)" ${isInGame ? "" : "disabled"}>
+                    ${roundInfo["options"][0]}
+            </button>
         </div>
         <div class="container">
             <button type="button" class="option-btn btn btn-light" id="option-button-1" name="${roundInfo["options"][1]}"
-                value="${roundInfo["round_answer_key"]}"  onclick="selectRoundOption(this)">${roundInfo["options"][1]}</button>
+                value="${roundInfo["round_answer_key"]}"  onclick="selectRoundOption(this)" ${isInGame ? "" : "disabled"}>
+                    ${roundInfo["options"][1]}
+            </button>
         </div>
         <div class="container">
             <button type="button" class="option-btn btn btn-light" id="option-button-2" name="${roundInfo["options"][2]}"
-                value="${roundInfo["round_answer_key"]}" onclick="selectRoundOption(this)">${roundInfo["options"][2]}</button>
+                value="${roundInfo["round_answer_key"]}" onclick="selectRoundOption(this)" ${isInGame ? "" : "disabled"}>
+                    ${roundInfo["options"][2]}
+            </button>
         </div>
         `
     );
