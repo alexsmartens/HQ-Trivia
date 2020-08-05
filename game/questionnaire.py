@@ -95,7 +95,7 @@ def map_question_str2dict(question_str, q_hash):
 
      Returns:
          question - (dict) a question dictionary ready to by played, which includes a "question", a correct "answer",
-            3 "options" including the correct option and the question index in the database "hash_idx".
+            3 "options" including the correct option and the question index in the database "hash".
      """
     question_raw = json.loads(question_str)
     assert ("category" in question_raw) and \
@@ -133,7 +133,7 @@ def get_random_questions(redis_client, redis_key, q_len):
          q_hashes - (set) set of the question hashes (for assuring that the game does not run the same question twice
             if additional questions are polled during the game).
          q_queue - (deque) queue of question. Each question is stored in a dictionary format, with the following
-            keys: "question", "options", "answer", "hash_idx"
+            keys: "question", "options", "answer", "hash"
 
      """
     num_questions = redis_client.hlen(redis_key)
@@ -220,7 +220,7 @@ class QuestionManager:
 
         Returns:
              question - (dict) first question in the queue (self.questions_q), this question has the following keys:
-                "question", "options", "answer", "hash_idx" (as per map_question_str2dict specification).
+                "question", "options", "answer", "hash" (as per map_question_str2dict specification).
         """
         if len(self.questions_q) -1 < self.min_questions:
             eventlet.spawn(self._prepare_game_questions)
