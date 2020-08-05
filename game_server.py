@@ -65,9 +65,9 @@ def register_client(data):
     Register the client to the next room in play if there is no conflict with the client name, otherwise False.
 
     Arguments:
-        data - (dict) where the "username" key corresponds to the requested username.
+        data - (dict) with only one key, "username", which value is the requested username.
 
-    Returns:
+    Returns (the front end callback gets the returned values):
         username - (str) the same as the username input argument if provided, an empty string otherwise.
         room_name - (str or bool) the next room in play if there is no conflict with the client name, otherwise
             False.
@@ -94,6 +94,23 @@ def register_client(data):
         app.logger.warning(f"Incorrect data format was received form the client {request.sid}: {data}. A correct "
                            f"message should have 'username' key and its value should be a non-empty string.")
         return "", False, {}, 0, False, '{"msg": "No user name provided, please try again", "type": "warning"}'
+
+
+@socketio.on("report_round_answer")
+def register_player_answer(data):
+    """
+    Register the player answer in the corresponding round.
+
+    Arguments:
+        data - (dict) with the following keys:
+            "round_answer_key" - a redis hash map key, where the answer is to be registered;
+            "username" - player's name, a key for registering the answer in the hash map;
+            "answer" - user's answer, a value for the corresponding key
+
+    Returns:
+        None
+    """
+    redis_client.hset(data["round_answer_key"], data["username"], data["answer"])
 
 
 if __name__ == "__main__":
