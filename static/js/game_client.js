@@ -67,8 +67,6 @@ function informUser (msg) {
             break;
 
         case "new_round":
-            console.log("* Start round")
-            console.log(msg)
             runRound(msg)
             break;
 
