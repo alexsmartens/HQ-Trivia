@@ -54,9 +54,6 @@ function informUser (msg) {
                 case "left":
                     updatePlayer("remove", msg["username"]);
                     break;
-                case "remove":
-                    $(`label#player_tag_${player_name}`).remove();
-                    break;
                 default:
                     console.error("Unexpected action received on players_update");
             }
@@ -96,10 +93,10 @@ function updatePlayer(command, player_name) {
             );
             break;
         case "remove":
-            let player_left_tag = $("div#spinner-starting");
-            if (player_left_tag.length > 0) {
-                $(`label#player_tag_${player_name}`).remove()
-            }
+            let player_label = $(`label#player_tag_${player_name}`)
+            if (player_label.length > 0)
+                player_label.remove();
+
             break;
         default:
             console.error("Not expected add player command");
@@ -156,15 +153,15 @@ function runRound(roundInfo){
         </blockquote>
         <div class="container">
             <button type="button" class="option-btn btn btn-light" id="option-button-0" name="${roundInfo["options"][0]}"
-                value="${roundInfo["pub_answer_key"]}" onclick="selectRoundOption(this)">${roundInfo["options"][0]}</button>
+                value="${roundInfo["round_answer_key"]}" onclick="selectRoundOption(this)">${roundInfo["options"][0]}</button>
         </div>
         <div class="container">
             <button type="button" class="option-btn btn btn-light" id="option-button-1" name="${roundInfo["options"][1]}"
-                value="${roundInfo["pub_answer_key"]}"  onclick="selectRoundOption(this)">${roundInfo["options"][1]}</button>
+                value="${roundInfo["round_answer_key"]}"  onclick="selectRoundOption(this)">${roundInfo["options"][1]}</button>
         </div>
         <div class="container">
             <button type="button" class="option-btn btn btn-light" id="option-button-2" name="${roundInfo["options"][2]}"
-                value="${roundInfo["pub_answer_key"]}" onclick="selectRoundOption(this)">${roundInfo["options"][2]}</button>
+                value="${roundInfo["round_answer_key"]}" onclick="selectRoundOption(this)">${roundInfo["options"][2]}</button>
         </div>
         `
     );
@@ -181,11 +178,11 @@ function selectRoundOption(btnInfo) {
     $(`button.option-btn`).prop("disabled", true);
 }
 
-function reportRoundAnswer(answer, pub_answer_key) {
+function reportRoundAnswer(answer, round_answer_key) {
     socket.emit("report_round_answer", {
         username: username,
         answer: answer,
-        pub_answer_key: pub_answer_key,
+        round_answer_key: round_answer_key,
     });
 }
 
