@@ -153,6 +153,9 @@ class UserRegistry(dict):
         Returns:
            None
         """
+        assert "room_name" in user_info and "username" in user_info, \
+            f"Every published message should have at least 'room_name' and 'username'keys but this does not, " \
+            f"message: {user_info}"
         # Broadcast that the new user has joined/left the group
         self.redis_client.publish(self.channel_name, json.dumps({
             "room_name": user_info["room_name"],
@@ -162,12 +165,13 @@ class UserRegistry(dict):
         }))
         # Update the room records
         if action_str == "left":
-            self.redis_client.srem(user_info["room_name"], user_info["username"])
+            if self.redis_client.exists(user_info["room_name"], user_info["username"]):
+                self.redis_client.srem(user_info["room_name"], user_info["username"])
 
 
 class GameFactory:
     """
-    Registers new client connections and creates games when enough clients connected (this is a singleton).
+    Registers new players and creates games when enough players connected. *This is a singleton.
     """
     _singleton = None
 
@@ -213,7 +217,7 @@ class GameFactory:
             is_game_starting - (bool) whether a new game was created, this depends on what the player sees when he/she
                 logs in.
             msg - (json_str) empty if there is no conflict with the username, otherwise a json_str with two attributes
-                where (1) "msg" is a message asking to pick a different name and (2) "type" is "info"
+                where (1) "msg" is a message asking to pick a different name and (2) "type" is "info".
         """
         # next_room_in is checked every time because it might be updated by a different server instance. It happens if
         # a different server has started the previous game, then the player is to be enrolled to the most recent
@@ -260,17 +264,159 @@ class GameFactory:
 
 
 class Game:
+    """
+    Plays the game for the registered players.
+    """
     def __init__(self, room_name, redis_client, channel_name, logger):
+        """
+        Arguments:
+            room_name - (str) the game room name, only players who joined this room are in this game. Also, a redis
+                value stored by the room name has a set of all players in the game at any moment of time, including
+                prior to the game start and during the game.
+            redis_client - (obj) redis client for game messages communication.
+            channel_name - (str) redis channel the game messages are published to.
+            logger - (obj) app logger.
+        """
         self.room_name = room_name
         self.redis_client = redis_client
         self.channel_name = channel_name
         self.logger = logger
         # Game info
         self.round_cnt = 0
+        self.question_q = QuestionManager(self.redis_client, self.logger)
 
-    def run_new_round(self):
+    def _run_new_round(self, round_timer):
+        """"
+        Runs a round of game for the players registered in this game (room). This includes asking a question, collecting
+        the answers, removing players who answered incorrectly from the game, and prompting results back to the users.
+
+        Arguments:
+            round_timer - (int) available time in seconds for answering a question.
+
+        Returns:
+            players_in_game - (int) number of players who are still in the game (submitted the correct answers).
+        """
         self.round_cnt += 1
-        answers2report_name = f"{self.room}-RND-{self.round_cnt}-ANSWRS"
 
-    def get_question(self):
-        pass
+        # Initialize the info required to run a new round
+        question = self.question_q.pop()
+        if len(question["question"]) == 0:
+            self.logger.error("CRITICAL ERROR: not enough questions for a round to run")
+        # Players' answers are to be submitted to the hash table with the round key below. When submitting, the hash
+        # is the player username and the value is the question answer
+        round_answer_key = f"{self.room_name}-ROUND-{self.round_cnt}-ANSWERS"
+
+        # Launch a new round
+        eventlet.spawn(self._publish, {"type": "new_round",
+                                       "question": question["question"],
+                                       "options": question["options"],
+                                       "round_answer_key": round_answer_key,
+                                       "timer": round_timer,
+                                       "round": self.round_cnt,
+                                       "room": self.room_name,
+                                       })
+        # Wait until the round is ended
+        eventlet.sleep(round_timer)
+
+        # Get players' answers
+        answers = self.redis_client.hgetall(round_answer_key)
+
+        # Initialize round statistics accounting
+        answer_cnt = 0  # Total number of answers received
+        correct_cnt = 0  # Total number of correct answers received
+        option_cnt = dict.fromkeys(question["options"], 0)  # Total number of answers received for every option
+        correct_answer = question["answer"]
+
+        # Compute round statistics
+        for username, answer in answers.items():
+            if answer in option_cnt:
+                option_cnt[answer] += 1
+                if answer == correct_answer:
+                    correct_cnt += 1
+                else:
+                    # Broadcast players who submitted incorrect answers and remove them form the game
+                    eventlet.spawn(self._publish, {
+                        "type": "players_update",
+                        "action": "left",
+                        "username": username,
+                    })
+                answer_cnt += 1
+            else:
+                self.logger.error(f"Player's answer does not match any available options, username: {username}, "
+                                  f"answer: {answer}, available options: {question['options'].keys()}")
+        # Prepare option stats as ratios
+        option_stats = {option: cnt/answer_cnt if answer_cnt else 0 for option, cnt in option_cnt.items()}
+        # Inform all players (no matter they lose or win) about the round results
+        eventlet.spawn(self._publish, {
+            "type": "round_stats",
+            "round": self.round_cnt,
+            "options": question["options"],
+            "stats": option_stats,
+            "correct_answer": correct_answer,
+            "players_in_game": correct_cnt,
+        })
+        # Clean up the hash table for recording the round answers
+        self.redis_client.delete(round_answer_key)
+        return correct_cnt
+
+    def _publish(self, info):
+        """
+        Publishes round updates. Also, removes players who submitted incorrect answers from the game room (if "left"
+        action provided).
+
+        Arguments:
+           info - (dict) includes "type" and possibly some other game related keys.
+
+        Returns:
+           None
+        """
+        assert "type" in info, f"Every published message should have at least 'type' keys but this does not, message: {info}"
+        info["room_name"] = self.room_name
+        # Broadcast the received info
+        self.redis_client.publish(self.channel_name, json.dumps(info))
+        # Remove the user from this game if asked
+        if "action" in info and info["action"] == "left":
+            assert "username" in info, "Username should be provided on 'left' action str"
+            if self.redis_client.exists(self.room_name, info["username"]):
+                self.redis_client.srem(self.room_name, info["username"])
+
+    def run(self, game_timer=10, round_timer=10):
+        """"
+        Runs a series of rounds until there is only one player left.
+
+        Arguments:
+            game_timer - (int) available time in seconds for joining a game by other players.
+            round_timer - (int) available time in seconds for answering a question in each round.
+
+        Returns:
+            None
+        """
+
+        # Notify players about starting new game
+        eventlet.spawn(self._publish, {"type": "new_game", "timer": game_timer})
+        # Wait until it is time to start the game
+        eventlet.sleep(game_timer)
+
+        # Stop users from joining this game
+        self.redis_client.delete(conf.NEXT_GAME_ROOM)
+        self.redis_client.delete(conf.NEXT_GAME_SERVER)
+
+        eventlet.sleep(2)  # Allow the latest players to get ready
+        # Run rounds until there are more than one player in the game
+        players_in_game = 2
+        while players_in_game > 1:
+            players_in_game = self._run_new_round(round_timer)
+            eventlet.sleep(10)  # Delay between rounds
+
+        # Clean up the set for keeping track of the users in game
+        self.redis_client.delete(self.room_name)
+
+        # Keep track of how many rounds players completed for future question selection
+        self.logger.info(f"Game ends in {self.round_cnt} rounds")
+
+    def start(self):
+        """
+        Starts the game asynchronously.
+        """
+        eventlet.spawn(self.run)
+
