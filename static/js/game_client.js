@@ -67,16 +67,81 @@ function informUser (msg) {
             break;
 
         case "new_round":
-            $("div#game-boilerplate").empty();
             console.log("* Start round")
-            runTimer(msg["timer"], function () {
-                console.log("** End round")
-            })
+            console.log(msg)
+            runRound(msg)
             break;
 
         default:
             console.error("Not expected msg type");
     }
+}
+
+function addPlayers(players) {
+    Object.keys(players).forEach(function(player_name) {
+        updatePlayer("add", player_name);
+    });
+}
+
+function updatePlayer(command, player_name) {
+    switch (command) {
+        case "add":
+            $("div.player_wrapper").append(
+                `<label class="player_tag" id="player_tag_${player_name}">${player_name}</label>`
+            );
+            break;
+        case "add_me":
+            $("div.player_wrapper").append(
+                `<label class="me_player_tag" id="player_tag_${player_name}">${player_name}</label>`
+            );
+            break;
+        case "remove":
+            let player_left_tag = $("div#spinner-starting");
+            if (player_left_tag.length > 0) {
+                $(`label#player_tag_${player_name}`).remove()
+            }
+            break;
+        default:
+            console.error("Not expected add player command");
+    }
+}
+
+function announceGameStatus(status, minPlayers){
+    let gameInfoWrapper = $("div#game-info-wrapper");
+    switch (status) {
+        case "waiting":
+            gameInfoWrapper.empty();
+            let waiting_str = "Waiting for more players to join...";
+            if (minPlayers)
+                waiting_str = `Game will Start when ${minPlayers} Players Join`
+            gameInfoWrapper.append(
+                `<h2 class="text-center" id="game-info-wrapper" style="color: #ccc">
+                    <div class="spinner-grow" id="spinner-waiting" role="status"> </div>
+                    ${waiting_str}
+                </h2>`
+            );
+            break;
+        case "starting":
+            if ($("div#spinner-starting").length == 0){
+                // Exclude of possibility of doing this twice (when the last user joined and on the game announcement)
+                gameInfoWrapper.empty();
+                gameInfoWrapper.append(
+                    `<h2 class="text-center" id="game-info-wrapper" style="color: #DC3545">
+                        <div class="spinner-grow text-danger" id="spinner-starting" role="status"> </div>
+                        Get Ready! 
+                    </h2>`
+                );
+            }
+            break;
+        case "remove":
+            $(`label#player_tag_${player_name}`).remove()
+            break;
+        default:
+            console.error("Not expected add player command");
+    }
+}
+
+function runRound(roundInfo){
 }
 
 function runTimer(time, callback) {
@@ -119,68 +184,4 @@ function runTimer(time, callback) {
         $(".circle_animation").css("stroke-dashoffset", initialOffset - ((i + 1) * (initialOffset / time)));
         i++;
     }, 1000);
-}
-
-function addPlayers(players) {
-    Object.keys(players).forEach(function(player_name) {
-        updatePlayer("add", player_name);
-    });
-}
-
-function updatePlayer(command, player_name) {
-    switch (command) {
-        case "add":
-            $("div.player_wrapper").append(
-                `<label class="player_tag" id="player_tag_${player_name}">${player_name}</label>`
-            );
-            break;
-        case "add_me":
-            $("div.player_wrapper").append(
-                `<label class="me_player_tag" id="player_tag_${player_name}">${player_name}</label>`
-            );
-            break;
-        case "remove":
-            let player_left_tag = $("div#spinner-starting");
-            if (player_left_tag.length > 0) {
-                $(`label#player_tag_${player_name}`).remove()
-            }
-            break;
-        default:
-            console.error("Not expected add player command");
-    }
-}
-
-function announceGameStatus(status, minPlayers){
-    let div_game_boilerplate = $("div#game-boilerplate");
-    switch (status) {
-        case "waiting":
-            div_game_boilerplate.empty();
-            let waiting_str = "Waiting for more players to join...";
-            if (minPlayers)
-                waiting_str = `Game will Start when ${minPlayers} Players Join`
-            div_game_boilerplate.append(
-                `<h2 class="text-center" id="game-boilerplate" style="color: #ccc">
-                    <div class="spinner-grow" id="spinner-waiting" role="status"> </div>
-                    ${waiting_str}
-                </h2>`
-            );
-            break;
-        case "starting":
-            if ($("div#spinner-starting").length == 0){
-                // Exclude of possibility of doing this twice (when the last user joined and on the game announcement)
-                div_game_boilerplate.empty();
-                div_game_boilerplate.append(
-                    `<h2 class="text-center" id="game-boilerplate" style="color: #DC3545">
-                        <div class="spinner-grow text-danger" id="spinner-starting" role="status"> </div>
-                        Get Ready! 
-                    </h2>`
-                );
-            }
-            break;
-        case "remove":
-            $(`label#player_tag_${player_name}`).remove()
-            break;
-        default:
-            console.error("Not expected add player command");
-    }
 }
