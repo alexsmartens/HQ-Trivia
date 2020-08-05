@@ -32,6 +32,15 @@
             padding-left: 4px;
             margin-right: 6px;
         }
+        .option-btn{
+            margin-top: 35px;
+            margin-left: 30%;
+            min-width: 40% !important;
+            text-align: left;
+            background-color: white;
+            border-radius: 20px;
+            border: 2px solid #E8E8E8;
+        }
     </style>
 
 </head>
@@ -73,7 +82,7 @@
             <div class="col-sm-8 shadow p-3 mb-5 bg-white rounded" style="min-height:265px !important">
                 <div class="interactive-board">
                     <!-- Game status bar in the beginning -->
-                    <div id="game-boilerplate">
+                    <div class="container" id="game-info-wrapper">
                         <h2 style="color: #ccc">Log in to Play</h2>
                     </div>
 
@@ -88,6 +97,10 @@
                             </svg>
                         </div>
                     </center>
+                    <!-- Question & Options -->
+                    <div class="container" id="round-wrapper" style="margin-top: 30px; margin-bottom: 50px">
+                    </div>
+
                 </div>
             </div>
         </div>

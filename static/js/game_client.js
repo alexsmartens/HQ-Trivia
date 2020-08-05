@@ -133,15 +133,60 @@ function announceGameStatus(status, minPlayers){
                 );
             }
             break;
-        case "remove":
-            $(`label#player_tag_${player_name}`).remove()
-            break;
         default:
-            console.error("Not expected add player command");
+            console.error("Not expected game announce command");
     }
 }
 
 function runRound(roundInfo){
+    let gameInfoWrapper = $("div#game-info-wrapper"),
+        roundWrapper =  $("div#round-wrapper");
+    gameInfoWrapper.empty();
+    gameInfoWrapper.append(
+        `<h2 class="text-center" id="game-info-wrapper" style="color: #ccc">
+            Round ${roundInfo["round"]}
+        </h2>`
+    );
+
+    roundWrapper.empty()
+    roundWrapper.append(
+        `
+        <blockquote class="blockquote text-center">
+          <p class="mb-0">${roundInfo["question"]}</p>
+        </blockquote>
+        <div class="container">
+            <button type="button" class="option-btn btn btn-light" id="option-button-0" name="${roundInfo["options"][0]}"
+                value="${roundInfo["pub_answer_key"]}" onclick="selectRoundOption(this)">${roundInfo["options"][0]}</button>
+        </div>
+        <div class="container">
+            <button type="button" class="option-btn btn btn-light" id="option-button-1" name="${roundInfo["options"][1]}"
+                value="${roundInfo["pub_answer_key"]}"  onclick="selectRoundOption(this)">${roundInfo["options"][1]}</button>
+        </div>
+        <div class="container">
+            <button type="button" class="option-btn btn btn-light" id="option-button-2" name="${roundInfo["options"][2]}"
+                value="${roundInfo["pub_answer_key"]}" onclick="selectRoundOption(this)">${roundInfo["options"][2]}</button>
+        </div>
+        `
+    );
+
+    runTimer(roundInfo["timer"], function () {
+        $(`button.option-btn`).prop("disabled", true);
+    });
+}
+
+function selectRoundOption(btnInfo) {
+    reportRoundAnswer(btnInfo.name, btnInfo.value)
+    // Block on option to change the decision
+    $(`button#${btnInfo.id}`).css("background-color", "#007BFF").css("color", "white");
+    $(`button.option-btn`).prop("disabled", true);
+}
+
+function reportRoundAnswer(answer, pub_answer_key) {
+    socket.emit("report_round_answer", {
+        username: username,
+        answer: answer,
+        pub_answer_key: pub_answer_key,
+    });
 }
 
 function runTimer(time, callback) {
