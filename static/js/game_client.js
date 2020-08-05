@@ -275,7 +275,6 @@ function runTimer(time, callback) {
     $("h2.timer_text").text(time);
     $(".timer_text").css("color", "black");
     $(".circle_animation").css("stroke", "#6fdb6f");
-    $(".circle_animation").css("stroke-dashoffset", initialOffset);
     setTimeout(() => {
         $(".circle_animation").css("stroke-dashoffset", initialOffset - (1 * (initialOffset / time)));
     })
@@ -291,6 +290,9 @@ function runTimer(time, callback) {
                 $(".timer_text").css("color", "white");
                 $(".circle_animation").css("stroke", "white");
                 clearInterval(interval);
+                // Return timer arc to the initial position
+                $(".circle_animation").css("stroke-dashoffset", initialOffset);
+                // Do a callback if any
                 if (callback) callback()
                 // Stop circle animation
                 return;
