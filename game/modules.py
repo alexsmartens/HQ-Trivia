@@ -207,6 +207,7 @@ class GameFactory:
             username - (str) the same as the username input argument.
             room_name - (str or bool) the next room in play if there is no conflict with the username, otherwise
                 False.
+            other_players - (set) other players in the game.
             msg - (json_str) empty if there is no conflict with the username, otherwise a json_str with two attributes
                 where (1) "msg" is a message asking to pick a different name and (2) "type" is "info"
         """
@@ -217,10 +218,10 @@ class GameFactory:
 
         if self.redis_client.sismember(next_room, username):
             # Client with this name is already registered
-            return username, False, '{' \
-                                    '"msg": "This username already exists, please pick a different one", ' \
-                                    '"type": "info"' \
-                                    '}'
+            return username, False, set(), '{' \
+                '"msg": "This username already exists, please pick a different one", ' \
+                '"type": "info"' \
+                '}'
         else:
             if self.min_players - self.redis_client.scard(next_room) <= 1:
                 # Spawn a new game
@@ -231,8 +232,9 @@ class GameFactory:
                     self.redis_client[conf.NEXT_GAME_SERVER] = self.server_name
                     # Create a new game
                     eventlet.spawn(self.create_new_game, next_room)
+            other_players = self.redis_client.smembers(next_room)
             self.redis_client.sadd(next_room, username)
-            return username, next_room, ""
+            return username, next_room, other_players, ""
 
     def _get_next_game_room(self):
         """"

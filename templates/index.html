@@ -13,8 +13,24 @@
     <style>
         .btn.btn-primary[disabled] {
             background-color: #cccccc;
+            color: #343A40;
             border: none;
-            color: black;
+        }
+        .player_tag{
+            background: lightgray;
+            color: #666666;
+            border-radius: 4px;
+            padding-right: 4px;
+            padding-left: 4px;
+            margin-right: 6px;
+        }
+        .me_player_tag{
+            background: #007BFF;
+            color: white;
+            border-radius: 4px;
+            padding-right: 4px;
+            padding-left: 4px;
+            margin-right: 6px;
         }
     </style>
 
@@ -43,9 +59,14 @@
                         </div>
                     </div>
                 </form>
+
+                <label class="label_players" style="color: white; transition: color 1s">Players</label>
+                <div class="player_wrapper" style="padding: 0" >
+<!--                <div class="container" style=" border: 1px solid lightgray; border-radius: 4px; padding: 5px">-->
+                </div>
             </div>
 
-            <!-- Col 2 -->
+            <!-- Col 2 (white space between two zones) -->
             <div class="col-sm-1"></div>
 
             <!-- Col 3-->

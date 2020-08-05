@@ -6,15 +6,19 @@ let username = "",
 $("#noname_form").on("submit", function (e) {
     e.preventDefault()
     username = $("input.username").val();
-    socket.emit("register_client", {username: username}, registerUsername);
+    if (username.length > 0)
+        socket.emit("register_client", {username: username}, registerUsername);
 });
 
 // Register username
-function registerUsername(username, roomName, msg_json){
+function registerUsername(username, roomName, otherPlayers, msgJson){
     if (roomName) {
         $("[id^=noname]").prop("disabled", true);
+        $(".label_players").css("color", "black");
+        addPlayers(otherPlayers)
+        updatePlayer("add_me", username)
     } else {
-        informUser(JSON.parse(msg_json));
+        informUser(JSON.parse(msgJson));
     };
 }
 
@@ -29,26 +33,46 @@ function informUser (msg) {
         case "info":
             console.log(msg["msg"]);
             break;
+
         case "warning":
             console.warn(msg["msg"]);
             break;
+
         case "players_update":
-            console.log(msg);
+            switch (msg["action"]) {
+                case "joined":
+                    if (msg["username"] == username)
+                        {}
+                    else
+                        updatePlayer("add", msg["username"]);
+                    break;
+                case "left":
+                    updatePlayer("remove", msg["username"]);
+                    break;
+                case "remove":
+                    $(`label#player_tag_${player_name}`).remove();
+                    break;
+                default:
+                    console.error("Unexpected action received on players_update");
+            }
             break;
+
         case "new_game":
             console.log("> Game about to start")
             runTimer(msg["timer"], function () {
                 console.log(">> Start Game")
             })
             break;
+
         case "new_round":
             console.log("* Start round")
             runTimer(msg["timer"], function () {
                 console.log("** End round")
             })
             break;
+
         default:
-            console.error("Not expected msg type")
+            console.error("Not expected msg type");
     }
 }
 
@@ -92,4 +116,30 @@ function runTimer(time, callback) {
         $(".circle_animation").css("stroke-dashoffset", initialOffset - ((i + 1) * (initialOffset / time)));
         i++;
     }, 1000);
+}
+
+function addPlayers(players) {
+    Object.keys(players).forEach(function(player_name) {
+        updatePlayer("add", player_name);
+    });
+}
+
+function updatePlayer(command, player_name) {
+    switch (command) {
+        case "add":
+            $("div.player_wrapper").append(
+                `<label class="player_tag" id="player_tag_${player_name}">${player_name}</label>`
+            );
+            break;
+        case "add_me":
+            $("div.player_wrapper").append(
+                `<label class="me_player_tag" id="player_tag_${player_name}">${player_name}</label>`
+            );
+            break;
+        case "remove":
+            $(`label#player_tag_${player_name}`).remove()
+            break;
+        default:
+            console.error("Not expected add player command");
+    }
 }
