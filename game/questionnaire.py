@@ -79,7 +79,7 @@ def load_questions2redis(redis_client, file_path=None, file_ext=None, category_d
                    ("suggestions" in question), \
                 f"One or more keys are missing the selected JSON string question, the expected keys are 'category', " \
                 f"'question', 'answer', 'alternateSpellings', 'suggestions'. The encountered question: {question}"
-            question["question"] = question["question"].replace("<BLANK>", "_______")
+            question["question"] = question["question"].replace("<BLANK>", " _______ ")
             redis_client.hset(redis_key, idx, json.dumps(question))
     del questions
 
@@ -169,7 +169,7 @@ class QuestionManager:
         self.min_questions = min_questions
         self.question_config = {
             conf.NORMAL_QUESTIONS: 10,
-            conf.NORMAL_QUESTIONS: 5,
+            conf.FINAL_QUESTIONS: 5,
         } if question_config is None else question_config
         # Keeping track of the game questions
         self.questions_q = deque()
