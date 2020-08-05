@@ -69,6 +69,9 @@ function informUser (msg) {
             runRound(msg)
             break;
 
+        case "round_stats":
+            announceRoundStats(msg)
+            break;
         default:
             console.error("Not expected msg type");
     }
@@ -137,7 +140,8 @@ function announceGameStatus(status, minPlayers){
 
 function runRound(roundInfo){
     let gameInfoWrapper = $("div#game-info-wrapper"),
-        roundWrapper =  $("div#round-wrapper");
+        questionWrapper =  $("div#question-wrapper"),
+        optionsWrapper =  $("div#options-wrapper");
     gameInfoWrapper.empty();
     gameInfoWrapper.append(
         `<h2 class="text-center" id="game-info-wrapper" style="color: #ccc">
@@ -145,12 +149,18 @@ function runRound(roundInfo){
         </h2>`
     );
 
-    roundWrapper.empty()
-    roundWrapper.append(
+    questionWrapper.empty()
+    questionWrapper.append(
         `
         <blockquote class="blockquote text-center">
           <p class="mb-0">${roundInfo["question"]}</p>
         </blockquote>
+        `
+    );
+
+    optionsWrapper.empty()
+    optionsWrapper.append(
+        `
         <div class="container">
             <button type="button" class="option-btn btn btn-light" id="option-button-0" name="${roundInfo["options"][0]}"
                 value="${roundInfo["round_answer_key"]}" onclick="selectRoundOption(this)">${roundInfo["options"][0]}</button>
@@ -169,6 +179,66 @@ function runRound(roundInfo){
     runTimer(roundInfo["timer"], function () {
         $(`button.option-btn`).prop("disabled", true);
     });
+}
+
+function announceRoundStats(roundStats) {
+    let gameInfoWrapper = $("div#game-info-wrapper"),
+        optionsWrapper =  $("div#options-wrapper"),
+        gameInfoStr = roundStats["players_in_game"] <= 1
+            ?
+                "Game Over"
+            :
+                `<div class="spinner-grow" id="spinner-waiting" role="status"> </div> Round ${roundStats["round"]}`;
+    gameInfoWrapper.empty();
+    gameInfoWrapper.append(
+        `<h2 class="text-center" id="game-info-wrapper" style="color: #ccc">
+            ${gameInfoStr}
+        </h2>`
+    );
+
+    optionsWrapper.empty()
+    optionsWrapper.append(
+        `
+        <div class="container" style="height: 0.1rem">
+        </div>
+        
+        <div class="progress position-relative option-stat-bar">
+            <div class="container position-absolute" >
+                <p style="line-height: 2.45rem; font-size: 1rem; color: #212529">${roundStats["options"][0]}</p>
+            </div>
+            <div class="progress-bar bg-success" role="progressbar" 
+                style="width: ${roundStats["stats"][roundStats["options"][0]] * 100}%; 
+                    background-color: ${roundStats["options"][0] == roundStats["correct_answer"] ? "#9dff9d" : "lightgray"} !important;" 
+                aria-valuenow="${roundStats["stats"][roundStats["options"][0]] * 100}" 
+                aria-valuemin="0" aria-valuemax="100">              
+            </div>
+        </div>
+        
+        <div class="progress position-relative option-stat-bar">
+            <div class="container position-absolute" >
+                <p style="line-height: 2.45rem; font-size: 1rem; color: #212529">${roundStats["options"][1]}</p>
+            </div>
+            <div class="progress-bar bg-success" role="progressbar" 
+                style="width: ${roundStats["stats"][roundStats["options"][1]] * 100}%; 
+                    background-color: ${roundStats["options"][1] == roundStats["correct_answer"] ? "#9dff9d" : "lightgray"} !important;" 
+                aria-valuenow="${roundStats["stats"][roundStats["options"][1]] * 100}" 
+                aria-valuemin="0" aria-valuemax="100">              
+            </div>
+        </div>
+        
+        <div class="progress position-relative option-stat-bar">
+            <div class="container position-absolute" >
+                <p style="line-height: 2.45rem; font-size: 1rem; color: #212529">${roundStats["options"][2]}</p>
+            </div>
+            <div class="progress-bar bg-success" role="progressbar" 
+                style="width: ${roundStats["stats"][roundStats["options"][2]] * 100}%; 
+                    background-color: ${roundStats["options"][2] == roundStats["correct_answer"] ? "#9dff9d" : "lightgray"} !important;" 
+                aria-valuenow="${roundStats["stats"][roundStats["options"][2]] * 100}" 
+                aria-valuemin="0" aria-valuemax="100">              
+            </div>
+        </div>
+        `
+    );
 }
 
 function selectRoundOption(btnInfo) {
