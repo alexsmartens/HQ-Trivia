@@ -220,8 +220,17 @@ class QuestionManager:
 
         Returns:
              question - (dict) first question in the queue (self.questions_q), this question has the following keys:
-                "question", "options", "answer", "hash" (as per map_question_str2dict specification).
+                "question", "options", "answer", "hash" (as per map_question_str2dict specification). Returns an empty
+                question if there are no questions in the queue (this is a sign of an error or a bug).
         """
-        if len(self.questions_q) -1 < self.min_questions:
+        if len(self.questions_q) - 1 < self.min_questions:
             eventlet.spawn(self._prepare_game_questions)
-        return self.questions_q.pop()
+        elif len(self.questions_q) == 0:
+            return {
+                "question": "",
+                "options": ["", "", ""],
+                "answer": "",
+                "hash": "",
+            }
+        else:
+            return self.questions_q.pop()
