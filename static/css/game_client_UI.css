@@ -1,0 +1,39 @@
+.btn.btn-primary[disabled] {
+    background-color: #cccccc;
+    color: #343A40;
+    border: none;
+}
+.player_tag{
+    background: lightgray;
+    color: #666666;
+    border-radius: 4px;
+    padding-right: 4px;
+    padding-left: 4px;
+    margin-right: 6px;
+}
+.me_player_tag{
+    background: #007BFF;
+    color: white;
+    border-radius: 4px;
+    padding-right: 4px;
+    padding-left: 4px;
+    margin-right: 6px;
+}
+.option-btn{
+    margin-top: 35px;
+    margin-left: 30%;
+    min-width: 40% !important;
+    text-align: left;
+    background-color: white;
+    border-radius: 20px;
+    border: 2px solid #E8E8E8;
+}
+.option-stat-bar{
+    margin-top: 35px;
+    margin-left: 30%;
+    width: 40%;
+    height: 2.45rem;
+    text-align: left;
+    background-color: #F8F9FA;
+    border-radius: 20px;
+}
