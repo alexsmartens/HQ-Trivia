@@ -6,8 +6,9 @@ Check out [this game](https://hq-trivia2.herokuapp.com) on heroku.
 ![alt text](https://github.com/alexsmartens/HQ-Trivia/blob/master/ScreenShotGame.png)
 
 ### Some game insights
-- game starts when at least 2 players joined;
+- type in your favourite nickname and press "Log in" to start playing;
 - a player with any name can join a game as long as there is no player with the same name already exists in this gaming room;
+- game starts when at least 2 players joined;
 - there is a _10 sec_ waiting time for other players to join the game after the minimum number of players have joined the game;
 - the first round starts after the initial _10 sec_  waiting time;
 - the game ends when there is only one player in the game (or none players if everyone lost);
