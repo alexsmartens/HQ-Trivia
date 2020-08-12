@@ -283,7 +283,12 @@ class Game:
         self.logger = logger
         # Game info
         self.round_cnt = 0
+        self.players = set()
+        eventlet.spawn(self._get_payers)
         self.question_q = QuestionManager(self.redis_client, self.logger)
+
+    def _get_payers(self):
+        self.players = self.redis_client.smembers(self.room_name)
 
     def _run_new_round(self, round_timer):
         """"
@@ -315,6 +320,8 @@ class Game:
                                        "round": self.round_cnt,
                                        "room": self.room_name,
                                        })
+        # Update players in the game
+        eventlet.spawn(self._get_payers)
         # Wait until the round is ended
         eventlet.sleep(round_timer)
 
@@ -328,7 +335,9 @@ class Game:
         correct_answer = question["answer"]
 
         # Compute round statistics
+        players_submitted = set()
         for username, answer in answers.items():
+            players_submitted.add(username)
             if answer in option_cnt:
                 option_cnt[answer] += 1
                 if answer == correct_answer:
@@ -344,6 +353,16 @@ class Game:
             else:
                 self.logger.error(f"Player's answer does not match any available options, username: {username}, "
                                   f"answer: {answer}, available options: {question['options'].keys()}")
+        # Update stat with the players who did not submit their answers
+        for username in self.players.difference(players_submitted):
+            answer_cnt += 1
+            # Broadcast players who did not submit their answers and remove them form the game
+            eventlet.spawn(self._publish, {
+                "type": "players_update",
+                "action": "left",
+                "username": username,
+            })
+
         # Prepare option stats as ratios
         option_stats = {option: cnt/answer_cnt if answer_cnt else 0 for option, cnt in option_cnt.items()}
         # Inform all players (no matter they lose or win) about the round results
