@@ -265,7 +265,7 @@ class GameFactory:
 
 class Game:
     """
-    Plays the game for the registered players.
+    A thread-like object, that plays the game for the registered players.
     """
     def __init__(self, room_name, redis_client, channel_name, logger):
         """
