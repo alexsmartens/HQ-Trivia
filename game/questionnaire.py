@@ -8,28 +8,6 @@ import eventlet
 import game.config_variables as conf
 
 
-def get_random_set(set_len, start, end):
-    """
-    Gets a set of random numbers in the range of [start, end).
-
-    Arguments:
-        start - (int) starting number.
-        end - (int) end number.
-        set_len - (int) length of the set to be generated.
-
-    Returns:
-        numbers - (set) set of random numbers.
-    """
-    numbers = set()
-    while len(numbers) < set_len:
-        rnd = random.randint(start, end-1)
-        if rnd in numbers:
-            pass
-        else:
-            numbers.add(rnd)
-    return numbers
-
-
 def load_questions2redis(redis_client, file_path=None, file_ext=None, category_dict=None):
     """
     Loads questions from a file to the specified redis hash maps, where each question category corresponds to a separate
@@ -84,67 +62,6 @@ def load_questions2redis(redis_client, file_path=None, file_ext=None, category_d
     del questions
 
 
-def map_question_str2dict(question_str, q_hash):
-    """
-    Maps a JSON string to a dictionary which is ready to be played.
-
-     Arguments:
-         question_str - (str) question in the JSON string format (includes the following keys:
-            'category', 'question', 'answer', 'alternateSpellings', 'suggestions').
-         q_hash - (str or int) the question hash in the corresponding hash map.
-
-     Returns:
-         question - (dict) a question dictionary ready to by played, which includes a "question", a correct "answer",
-            3 "options" including the correct option and the question index in the database "hash".
-     """
-    question_raw = json.loads(question_str)
-    assert ("category" in question_raw) and \
-           ("question" in question_raw) and \
-           ("answer" in question_raw) and \
-           ("alternateSpellings" in question_raw) and \
-           ("suggestions" in question_raw), \
-        f"One or more keys are missing the selected JSON string question, the expected keys are 'category', " \
-        f"'question', 'answer', 'alternateSpellings', 'suggestions'. The encountered question: {question_raw}"
-    assert isinstance(q_hash, int) or isinstance(q_hash, str), "Question hash should be integer or string"
-
-    question = {}
-    question["hash"] = q_hash
-    question["question"] = question_raw["question"]
-    question["answer"] = question_raw["answer"] if len(question_raw["alternateSpellings"]) == 0 or random.randint(0, 1) == 0\
-        else random.choice(question_raw["alternateSpellings"])
-    question["options"] = random.sample(question_raw["suggestions"], 2) + [question["answer"]]
-    random.shuffle(question["options"])
-    return question
-
-
-def get_random_questions(redis_client, redis_key, q_len):
-    """
-     Gets a list of random questions of the specified difficulty from redis.
-
-     Note:
-         Assumes that question hashes are the question indices (this is how load_questions2redis loads questions to redis).
-
-     Arguments:
-         redis_client - (obj) redis client, where the questions are to be read.
-         redis_key - (str) the redis key to the questions hash map.
-         q_len - (int) number of questions to be returned.
-
-     Returns:
-         q_hashes - (set) set of the question hashes (for assuring that the game does not run the same question twice
-            if additional questions are polled during the game).
-         q_queue - (deque) queue of question. Each question is stored in a dictionary format, with the following
-            keys: "question", "options", "answer", "hash"
-
-     """
-    num_questions = redis_client.hlen(redis_key)
-    q_hashes = get_random_set(q_len, 0, num_questions)
-    json_questions = redis_client.hmget(redis_key, *q_hashes)
-    q_queue = deque()
-    for i, q_hash in enumerate(q_hashes):
-        q_queue.append(map_question_str2dict(json_questions[i], q_hash))
-    return q_hashes, q_queue
-
-
 class QuestionManager:
     """
     A queue-like object, that gets questions from redis and provides an easy access to them through "pop" method. It
@@ -196,7 +113,7 @@ class QuestionManager:
          """
         if self.update_count < self._update_lim:
             for redis_hash, q_len in self.question_config.items():
-                q_hashes, q_queue = get_random_questions(self.redis_client, redis_hash, q_len)
+                q_hashes, q_queue = self._get_random_questions(self.redis_client, redis_hash, q_len)
                 if len(self.question_idx_ctrl[redis_hash]) == 0:
                     self.question_idx_ctrl[redis_hash] = q_hashes
                     while q_queue:
@@ -212,6 +129,89 @@ class QuestionManager:
             self.update_count += 1
         else:
             self.logger.error(f"Exceeded maximum number of question updates in a game (limit = {self._update_lim})")
+
+    def _get_random_questions(self, redis_client, redis_key, q_len):
+        """
+         Gets a list of random questions of the specified difficulty from redis.
+
+         Note:
+             Assumes that question hashes are the question indices (this is how load_questions2redis loads questions to redis).
+
+         Arguments:
+             redis_client - (obj) redis client, where the questions are to be read.
+             redis_key - (str) the redis key to the questions hash map.
+             q_len - (int) number of questions to be returned.
+
+         Returns:
+             q_hashes - (set) set of the question hashes (for assuring that the game does not run the same question twice
+                if additional questions are polled during the game).
+             q_queue - (deque) queue of question. Each question is stored in a dictionary format, with the following
+                keys: "question", "options", "answer", "hash"
+
+         """
+        num_questions = redis_client.hlen(redis_key)
+        q_hashes = self._get_random_number_set(q_len, 0, num_questions)
+        json_questions = redis_client.hmget(redis_key, *q_hashes)
+        q_queue = deque()
+        for i, q_hash in enumerate(q_hashes):
+            q_queue.append(self._map_question_str2dict(json_questions[i], q_hash))
+        return q_hashes, q_queue
+
+    @staticmethod
+    def _get_random_number_set(set_len, start, end):
+        """
+        Gets a set of random numbers in the range of [start, end).
+
+        Arguments:
+            start - (int) starting number.
+            end - (int) end number.
+            set_len - (int) length of the set to be generated.
+
+        Returns:
+            numbers - (set) set of random numbers.
+        """
+        numbers = set()
+        while len(numbers) < set_len:
+            rnd = random.randint(start, end - 1)
+            if rnd in numbers:
+                pass
+            else:
+                numbers.add(rnd)
+        return numbers
+
+    @staticmethod
+    def _map_question_str2dict(question_str, q_hash):
+        """
+        Maps a JSON string to a dictionary which is ready to be played.
+
+         Arguments:
+             question_str - (str) question in the JSON string format (includes the following keys:
+                'category', 'question', 'answer', 'alternateSpellings', 'suggestions').
+             q_hash - (str or int) the question hash in the corresponding hash map.
+
+         Returns:
+             question - (dict) a question dictionary ready to by played, which includes a "question", a correct "answer",
+                3 "options" including the correct option and the question index in the database "hash".
+         """
+        question_raw = json.loads(question_str)
+        assert ("category" in question_raw) and \
+               ("question" in question_raw) and \
+               ("answer" in question_raw) and \
+               ("alternateSpellings" in question_raw) and \
+               ("suggestions" in question_raw), \
+            f"One or more keys are missing the selected JSON string question, the expected keys are 'category', " \
+            f"'question', 'answer', 'alternateSpellings', 'suggestions'. The encountered question: {question_raw}"
+        assert isinstance(q_hash, int) or isinstance(q_hash, str), "Question hash should be integer or string"
+
+        question = {}
+        question["hash"] = q_hash
+        question["question"] = question_raw["question"]
+        question["answer"] = question_raw["answer"] if len(question_raw["alternateSpellings"]) == 0 or random.randint(0,
+                                                                                                                      1) == 0 \
+            else random.choice(question_raw["alternateSpellings"])
+        question["options"] = random.sample(question_raw["suggestions"], 2) + [question["answer"]]
+        random.shuffle(question["options"])
+        return question
 
     def pop(self):
         """
