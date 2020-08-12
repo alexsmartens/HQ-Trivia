@@ -113,7 +113,7 @@ class QuestionManager:
          """
         if self.update_count < self._update_lim:
             for redis_hash, q_len in self.question_config.items():
-                q_hashes, q_queue = self._get_random_questions(self.redis_client, redis_hash, q_len)
+                q_hashes, q_queue = self._get_random_questions(redis_hash, q_len)
                 if len(self.question_idx_ctrl[redis_hash]) == 0:
                     self.question_idx_ctrl[redis_hash] = q_hashes
                     while q_queue:
@@ -130,7 +130,7 @@ class QuestionManager:
         else:
             self.logger.error(f"Exceeded maximum number of question updates in a game (limit = {self._update_lim})")
 
-    def _get_random_questions(self, redis_client, redis_key, q_len):
+    def _get_random_questions(self, redis_key, q_len):
         """
          Gets a list of random questions of the specified difficulty from redis.
 
@@ -138,7 +138,6 @@ class QuestionManager:
              Assumes that question hashes are the question indices (this is how load_questions2redis loads questions to redis).
 
          Arguments:
-             redis_client - (obj) redis client, where the questions are to be read.
              redis_key - (str) the redis key to the questions hash map.
              q_len - (int) number of questions to be returned.
 
@@ -149,12 +148,12 @@ class QuestionManager:
                 keys: "question", "options", "answer", "hash"
 
          """
-        num_questions = redis_client.hlen(redis_key)
+        num_questions = self.redis_client.hlen(redis_key)
         q_hashes = self._get_random_number_set(q_len, 0, num_questions)
-        json_questions = redis_client.hmget(redis_key, *q_hashes)
+        json_questions = self.redis_client.hmget(redis_key, *q_hashes)
         q_queue = deque()
         for i, q_hash in enumerate(q_hashes):
-            q_queue.append(self._map_question_str2dict(json_questions[i], q_hash))
+            q_queue.append(self._map_question_str2dict(q_hash, json_questions[i]))
         return q_hashes, q_queue
 
     @staticmethod
@@ -180,14 +179,14 @@ class QuestionManager:
         return numbers
 
     @staticmethod
-    def _map_question_str2dict(question_str, q_hash):
+    def _map_question_str2dict(q_hash, question_str):
         """
         Maps a JSON string to a dictionary which is ready to be played.
 
          Arguments:
+             q_hash - (str or int) the question hash in the corresponding hash map.
              question_str - (str) question in the JSON string format (includes the following keys:
                 'category', 'question', 'answer', 'alternateSpellings', 'suggestions').
-             q_hash - (str or int) the question hash in the corresponding hash map.
 
          Returns:
              question - (dict) a question dictionary ready to by played, which includes a "question", a correct "answer",
