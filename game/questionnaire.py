@@ -200,10 +200,10 @@ class QuestionManager:
                 if len(self.question_idx_ctrl[redis_hash]) == 0:
                     self.question_idx_ctrl[redis_hash] = q_hashes
                     while q_queue:
-                        self.questions_q.append(q_queue.pop())
+                        self.questions_q.append(q_queue.popleft())
                 else:
                     while q_queue:
-                        question = q_queue.pop()
+                        question = q_queue.popleft()
                         if question["hash"] in self.question_idx_ctrl[redis_hash]:
                             pass
                         else:
@@ -233,4 +233,4 @@ class QuestionManager:
                 "hash": "",
             }
         else:
-            return self.questions_q.pop()
+            return self.questions_q.popleft()
