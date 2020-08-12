@@ -3,7 +3,8 @@
 
 Check out [this game](https://hq-trivia2.herokuapp.com) on heroku.
 
-![alt text](https://github.com/alexsmartens/HQ-Trivia/blob/master/ScreenShotGame.png)
+### UI
+![alt text](https://github.com/alexsmartens/HQ-Trivia/blob/master/documentation/ScreenShotGame.png)
 
 ### Some game insights
 - type in your favourite nickname and press "Log in" to start playing;
@@ -12,7 +13,13 @@ Check out [this game](https://hq-trivia2.herokuapp.com) on heroku.
 - there is a _10 sec_ waiting time for other players to join the game after the minimum number of players have joined the game;
 - the first round starts after the initial _10 sec_  waiting time;
 - the game ends when there is only one player in the game (or none players if everyone lost);
-- each game runs in a separate gaming room. When a game or multiple games is/are running then a new gaming room is created.
+- each game runs in a separate gaming room. When a game or multiple games is/are already running then a new gaming room is created.
+
+### Wireflow
+![alt text](https://github.com/alexsmartens/HQ-Trivia/blob/master/documentation/Wireflow.png)
+
+### UML Class Diagram (Backend)
+![alt text](https://github.com/alexsmartens/HQ-Trivia/blob/master/documentation/UMLclassDiagram.png)
 
 ### Running locally
 
