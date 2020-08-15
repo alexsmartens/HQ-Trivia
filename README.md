@@ -5,10 +5,12 @@ Check out [this game](https://hq-trivia2.herokuapp.com) on Heroku.
 
 Check out [game architecture presentation](https://prezi.com/view/KFCbpuFDe1zv89X0mXPq/) on Prezi.
 
+## Game Intro
+
 ### UI
 ![alt text](https://github.com/alexsmartens/HQ-Trivia/blob/master/documentation/0_screenshot.png)
 
-### Some game insights
+### Insights
 - type in your favourite nickname and press "Log in" to start playing;
 - a player with any name can join a game as long as there is no player with the same name already exists in this gaming room;
 - game starts when at least 2 players joined;
@@ -17,33 +19,33 @@ Check out [game architecture presentation](https://prezi.com/view/KFCbpuFDe1zv89
 - the game ends when there is only one player in the game (or none players if everyone lost);
 - each game runs in a separate gaming room. When a game or multiple games is/are already running then a new gaming room is created.
 
-### Presentation: Game Architecture
+## Game Architecture Presentation
 
-#### Intro
+### Intro
 ![alt text](https://github.com/alexsmartens/HQ-Trivia/blob/master/documentation/1_intro.png)
 
-#### Requirements & Outline
+### Outline & Requirements
 ![alt text](https://github.com/alexsmartens/HQ-Trivia/blob/master/documentation/2_requirements_outline.png)
 
-#### Wireflow
+### Wireflow
 ![alt text](https://github.com/alexsmartens/HQ-Trivia/blob/master/documentation/3_wireflow.png)
 
-#### Server-Client Communication for Real-Time Browser Game
+### Server-Client Communication for Real-Time Browser Game
 ![alt text](https://github.com/alexsmartens/HQ-Trivia/blob/master/documentation/4_server-client_communication.png)
 
-#### Stack
+### Stack
 ![alt text](https://github.com/alexsmartens/HQ-Trivia/blob/master/documentation/5_stack.png)
 
-#### How to scale?
+### How to scale?
 ![alt text](https://github.com/alexsmartens/HQ-Trivia/blob/master/documentation/6_scaling.png)
 
-#### UML Class Diagram
+### UML Class Diagram
 ![alt text](https://github.com/alexsmartens/HQ-Trivia/blob/master/documentation/7_uml_diagram.png)
 
-#### Flowchart
+### Flowchart
 ![alt text](https://github.com/alexsmartens/HQ-Trivia/blob/master/documentation/8_flowchart.png)
 
-### Running locally
+## Running locally
 
 1) Download/clone the project.
 2) Navigate to the project directory.
