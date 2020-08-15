@@ -1,10 +1,12 @@
 # HQ-Trivia II Game
 ## Heroku Flask-SocketIO Redis Eventlet Gunicorn
 
-Check out [this game](https://hq-trivia2.herokuapp.com) on heroku.
+Check out [this game](https://hq-trivia2.herokuapp.com) on Heroku.
+
+Check out [game architecture presentation](https://prezi.com/view/KFCbpuFDe1zv89X0mXPq/) on Prezi.
 
 ### UI
-![alt text](https://github.com/alexsmartens/HQ-Trivia/blob/master/documentation/ScreenShotGame.png)
+![alt text](https://github.com/alexsmartens/HQ-Trivia/blob/master/documentation/0_screenshot.png)
 
 ### Some game insights
 - type in your favourite nickname and press "Log in" to start playing;
@@ -15,11 +17,31 @@ Check out [this game](https://hq-trivia2.herokuapp.com) on heroku.
 - the game ends when there is only one player in the game (or none players if everyone lost);
 - each game runs in a separate gaming room. When a game or multiple games is/are already running then a new gaming room is created.
 
-### Wireflow
-![alt text](https://github.com/alexsmartens/HQ-Trivia/blob/master/documentation/Wireflow.png)
+### Presentation: Game Architecture
 
-### UML Class Diagram (Backend)
-![alt text](https://github.com/alexsmartens/HQ-Trivia/blob/master/documentation/UMLclassDiagram.png)
+#### Intro
+![alt text](https://github.com/alexsmartens/HQ-Trivia/blob/master/documentation/1_intro.png)
+
+#### Requirements & Outline
+![alt text](https://github.com/alexsmartens/HQ-Trivia/blob/master/documentation/2_requirements_outline.png)
+
+#### Wireflow
+![alt text](https://github.com/alexsmartens/HQ-Trivia/blob/master/documentation/3_wireflow.png)
+
+#### Server-Client Communication for Real-Time Browser Game
+![alt text](https://github.com/alexsmartens/HQ-Trivia/blob/master/documentation/4_server-client_communication.png)
+
+#### Stack
+![alt text](https://github.com/alexsmartens/HQ-Trivia/blob/master/documentation/5_stack.png)
+
+#### How to scale?
+![alt text](https://github.com/alexsmartens/HQ-Trivia/blob/master/documentation/6_scaling.png)
+
+#### UML Class Diagram
+![alt text](https://github.com/alexsmartens/HQ-Trivia/blob/master/documentation/7_uml_diagram.png)
+
+#### Flowchart
+![alt text](https://github.com/alexsmartens/HQ-Trivia/blob/master/documentation/8_flowchart.png)
 
 ### Running locally
 
